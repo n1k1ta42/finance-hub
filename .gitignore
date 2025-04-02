@@ -1,0 +1,64 @@
+# Основной .gitignore для всего репозитория
+
+# Go игнорируемые файлы
+/bin/
+/pkg/
+/vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# JavaScript/Node.js игнорируемые файлы
+node_modules/
+npm-debug.log
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm
+.env
+.env.*
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+coverage/
+dist/
+build/
+.DS_Store
+
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+out/
+.idea/httpRequests
+
+# Логи и временные файлы
+logs/
+*.log
+*.tmp
+tmp/
+.tmp/
+
+# Зависимости каждого проекта
+/backend/tmp/
+/backend/.env
+/frontend/dist/
+/frontend/.env
+.cursor

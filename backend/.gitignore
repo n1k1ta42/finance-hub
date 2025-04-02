@@ -1,0 +1,56 @@
+# Go бэкенд .gitignore
+
+# Бинарные файлы и результаты сборки
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+main
+backend
+finance-hub
+/bin/
+
+# Кэш зависимостей и модулей
+/vendor/
+go.sum.tmp
+
+# Временные файлы и директории
+tmp/
+.tmp/
+/data/
+
+# Локальные настройки
+.env
+env.example
+!.env.example
+*.local
+
+# Конфигурационные файлы сборки
+debug
+*.debug
+
+# Логи
+*.log
+logs/
+
+# Данные баз
+*.db
+*.sqlite
+*.sqlite3
+pg_data/
+
+# Покрытие кода
+*.cover
+coverage.out
+coverage.html
+profile.out
+
+# Сгенерированные файлы специфичные для Go
+_obj
+_test
+.glide/
+.dep/
+.cursor
