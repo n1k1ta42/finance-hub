@@ -67,10 +67,10 @@ func (pc *PaymentController) GetPaymentByID(c *fiber.Ctx) error {
 func (pc *PaymentController) ProcessPayment(c *fiber.Ctx) error {
 	userID := middlewares.GetUserID(c)
 	var input struct {
-		Plan           string                 `json:"plan" validate:"required,oneof=basic premium pro"`
-		Period         string                 `json:"period" validate:"required,oneof=monthly yearly lifetime"`
-		PaymentMethod  string                 `json:"paymentMethod" validate:"required"`
-		PaymentIntentId string                `json:"paymentIntentId" validate:"required"`
+		Plan            string `json:"plan" validate:"required,oneof=basic premium pro"`
+		Period          string `json:"period" validate:"required,oneof=monthly yearly lifetime"`
+		PaymentMethod   string `json:"paymentMethod" validate:"required"`
+		PaymentIntentId string `json:"paymentIntentId" validate:"required"`
 	}
 
 	if err := c.BodyParser(&input); err != nil {
@@ -91,11 +91,11 @@ func (pc *PaymentController) ProcessPayment(c *fiber.Ctx) error {
 
 	// Сначала создаем новую подписку
 	subscriptionInput := models.SubscriptionCreate{
-		Plan:   models.SubscriptionPlan(input.Plan),
-		Period: models.SubscriptionPeriod(input.Period),
+		Plan:      models.SubscriptionPlan(input.Plan),
+		Period:    models.SubscriptionPeriod(input.Period),
 		StartDate: time.Now(),
 	}
-	
+
 	// Деактивируем существующие активные подписки
 	db.DB.Model(&models.Subscription{}).
 		Where("user_id = ? AND active = ?", userID, true).
@@ -144,6 +144,28 @@ func (pc *PaymentController) ProcessPayment(c *fiber.Ctx) error {
 		})
 	}
 
+	// Получаем пользователя для информации
+	var user models.User
+	db.DB.First(&user, userID)
+	firstName, _ := utils.DecryptString(user.FirstName)
+	lastName, _ := utils.DecryptString(user.LastName)
+
+	// Формируем и отправляем сообщение в Telegram
+	start := subscription.StartDate.Format("2006-01-02")
+	end := "-"
+	if subscription.EndDate != nil {
+		end = subscription.EndDate.Format("2006-01-02")
+	}
+	msg := "🆕 Новая подписка (оплата)\n" +
+		"Email: " + user.Email + "\n" +
+		"Имя: " + firstName + "\n" +
+		"Фамилия: " + lastName + "\n" +
+		"План: " + string(subscription.Plan) + "\n" +
+		"Период: " + string(subscription.Period) + "\n" +
+		"Дата начала: " + start + "\n" +
+		"Дата окончания: " + end
+	utils.SendTelegramMessage(msg)
+
 	// Создаем новый платеж
 	payment := models.Payment{
 		UserID:         userID,
@@ -176,7 +198,7 @@ func (pc *PaymentController) ProcessPayment(c *fiber.Ctx) error {
 		IsRead:     false,
 		Data:       fmt.Sprintf(`{"paymentId": %d, "amount": %.2f, "subscriptionId": %d}`, payment.ID, payment.Amount, payment.SubscriptionID),
 	}
-	
+
 	if err := db.DB.Create(&notification).Error; err != nil {
 		log.Printf("Failed to create payment notification: %v", err)
 	}
@@ -185,7 +207,7 @@ func (pc *PaymentController) ProcessPayment(c *fiber.Ctx) error {
 		"status":  "success",
 		"message": "Платеж успешно обработан",
 		"data": fiber.Map{
-			"payment": payment,
+			"payment":      payment,
 			"subscription": subscription,
 		},
 	})
@@ -236,7 +258,7 @@ func (pc *PaymentController) RefundPayment(c *fiber.Ctx) error {
 		IsRead:     false,
 		Data:       fmt.Sprintf(`{"paymentId": %d, "amount": %.2f, "subscriptionId": %d}`, payment.ID, payment.Amount, payment.SubscriptionID),
 	}
-	
+
 	if err := db.DB.Create(&notification).Error; err != nil {
 		log.Printf("Failed to create refund notification: %v", err)
 	}

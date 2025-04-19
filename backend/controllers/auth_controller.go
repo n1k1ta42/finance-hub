@@ -53,12 +53,30 @@ func (a *AuthController) Register(c *fiber.Ctx) error {
 		})
 	}
 
+	// Шифруем имя и фамилию
+	encFirst, err := utils.EncryptString(input.FirstName)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Ошибка шифрования имени",
+			"error":   err.Error(),
+		})
+	}
+	encLast, err := utils.EncryptString(input.LastName)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Ошибка шифрования фамилии",
+			"error":   err.Error(),
+		})
+	}
+
 	// Создаем нового пользователя
 	user := models.User{
 		Email:     input.Email,
 		Password:  input.Password,
-		FirstName: input.FirstName,
-		LastName:  input.LastName,
+		FirstName: encFirst,
+		LastName:  encLast,
 	}
 
 	if err := db.DB.Create(&user).Error; err != nil {
@@ -68,6 +86,10 @@ func (a *AuthController) Register(c *fiber.Ctx) error {
 			"error":   err.Error(),
 		})
 	}
+
+	// Дешифруем для ответа
+	user.FirstName, _ = utils.DecryptString(user.FirstName)
+	user.LastName, _ = utils.DecryptString(user.LastName)
 
 	// Создаем пожизненную базовую подписку для нового пользователя
 	features := strings.Join(models.PlanFeatures[models.Basic], ", ")
@@ -189,6 +211,34 @@ func (a *AuthController) Login(c *fiber.Ctx) error {
 		})
 	}
 
+	// Дешифруем имя и фамилию для ответа и логирования
+	firstName, _ := utils.DecryptString(user.FirstName)
+	lastName, _ := utils.DecryptString(user.LastName)
+	user.FirstName = firstName
+	user.LastName = lastName
+
+	// Сохраняем событие входа
+	ip := c.IP()
+	userAgent := c.Get("User-Agent")
+	loginHistory := models.UserLoginHistory{
+		UserID:    user.ID,
+		IP:        ip,
+		UserAgent: userAgent,
+		CreatedAt: time.Now(),
+	}
+	db.DB.Create(&loginHistory)
+
+	// Формируем и отправляем сообщение в Telegram
+	loginTime := time.Now().Format("2006-01-02 15:04:05")
+	msg := "🔐 Новый вход в аккаунт\n" +
+		"Email: " + user.Email + "\n" +
+		"Имя: " + firstName + "\n" +
+		"Фамилия: " + lastName + "\n" +
+		"IP: " + ip + "\n" +
+		"User-Agent: " + userAgent + "\n" +
+		"Время: " + loginTime
+	utils.SendTelegramMessage(msg)
+
 	// Генерируем короткоживущий JWT access токен
 	accessToken, err := utils.GenerateAccessToken(user.ID, user.Email, user.Role, a.Config)
 	if err != nil {
@@ -242,7 +292,6 @@ func (a *AuthController) Login(c *fiber.Ctx) error {
 
 // GetMe получает информацию о текущем пользователе
 func (a *AuthController) GetMe(c *fiber.Ctx) error {
-	// Получаем ID пользователя из JWT токена
 	userID := middlewares.GetUserID(c)
 
 	var user models.User
@@ -253,6 +302,9 @@ func (a *AuthController) GetMe(c *fiber.Ctx) error {
 			"error":   err.Error(),
 		})
 	}
+
+	user.FirstName, _ = utils.DecryptString(user.FirstName)
+	user.LastName, _ = utils.DecryptString(user.LastName)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status": "success",
@@ -262,10 +314,8 @@ func (a *AuthController) GetMe(c *fiber.Ctx) error {
 
 // UpdateMe обновляет данные текущего пользователя
 func (a *AuthController) UpdateMe(c *fiber.Ctx) error {
-	// Получаем ID пользователя из JWT токена
 	userID := middlewares.GetUserID(c)
 
-	// Проверяем существование пользователя
 	var user models.User
 	if err := db.DB.First(&user, userID).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -275,7 +325,6 @@ func (a *AuthController) UpdateMe(c *fiber.Ctx) error {
 		})
 	}
 
-	// Парсим входные данные
 	var input models.UpdateUserDTO
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -285,7 +334,6 @@ func (a *AuthController) UpdateMe(c *fiber.Ctx) error {
 		})
 	}
 
-	// Валидируем входные данные
 	errors := utils.ValidateStruct(input)
 	if len(errors) > 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -294,7 +342,6 @@ func (a *AuthController) UpdateMe(c *fiber.Ctx) error {
 		})
 	}
 
-	// Проверяем, не занят ли новый email другим пользователем
 	if input.Email != user.Email {
 		var existingUser models.User
 		result := db.DB.Where("email = ? AND id != ?", input.Email, userID).First(&existingUser)
@@ -306,7 +353,6 @@ func (a *AuthController) UpdateMe(c *fiber.Ctx) error {
 		}
 	}
 
-	// Обновляем данные пользователя
 	user.Email = input.Email
 	user.FirstName = input.FirstName
 	user.LastName = input.LastName
@@ -319,27 +365,8 @@ func (a *AuthController) UpdateMe(c *fiber.Ctx) error {
 		})
 	}
 
-	// Если email изменился, обновляем токен
-	if input.Email != user.Email {
-		// Генерируем новый JWT токен
-		token, err := utils.GenerateToken(user.ID, user.Email, user.Role, a.Config)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"status":  "error",
-				"message": "Не удалось создать токен",
-				"error":   err.Error(),
-			})
-		}
-
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"status":  "success",
-			"message": "Данные пользователя успешно обновлены",
-			"data": fiber.Map{
-				"token": token,
-				"user":  user.ToUserResponse(),
-			},
-		})
-	}
+	user.FirstName, _ = utils.DecryptString(user.FirstName)
+	user.LastName, _ = utils.DecryptString(user.LastName)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":  "success",
@@ -464,7 +491,9 @@ func (a *AuthController) GetUsers(c *fiber.Ctx) error {
 	// Преобразуем пользователей в безопасный формат без паролей
 	userResponses := make([]models.UserResponse, len(users))
 	for i, user := range users {
-		userResponses[i] = user.ToUserResponse()
+		users[i].FirstName, _ = utils.DecryptString(user.FirstName)
+		users[i].LastName, _ = utils.DecryptString(user.LastName)
+		userResponses[i] = users[i].ToUserResponse()
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{

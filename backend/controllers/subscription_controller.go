@@ -168,6 +168,29 @@ func (sc *SubscriptionController) SubscribeUser(c *fiber.Ctx) error {
 		})
 	}
 
+	// Получаем пользователя для информации
+	var user models.User
+	db.DB.First(&user, userID)
+	firstName, _ := utils.DecryptString(user.FirstName)
+	lastName, _ := utils.DecryptString(user.LastName)
+
+	// Формируем и отправляем сообщение в Telegram
+	start := subscription.StartDate.Format("2006-01-02")
+	end := "-"
+	if subscription.EndDate != nil {
+		end = subscription.EndDate.Format("2006-01-02")
+	}
+	msg := "🆕 Новая подписка\n" +
+		"Email: " + user.Email + "\n" +
+		"Имя: " + firstName + "\n" +
+		"Фамилия: " + lastName + "\n" +
+		"План: " + string(subscription.Plan) + "\n" +
+		"Период: " + string(subscription.Period) + "\n" +
+		"Дата начала: " + start + "\n" +
+		"Дата окончания: " + end
+	fmt.Println(msg)
+	utils.SendTelegramMessage(msg)
+
 	// Создаем уведомление о новой подписке
 	notification := models.Notification{
 		UserID:     userID,
@@ -178,7 +201,7 @@ func (sc *SubscriptionController) SubscribeUser(c *fiber.Ctx) error {
 		IsRead:     false,
 		Data:       fmt.Sprintf(`{"subscriptionId": %d, "plan": "%s", "endDate": "%s"}`, subscription.ID, subscription.Plan, subscription.EndDate.Format(time.RFC3339)),
 	}
-	
+
 	if err := db.DB.Create(&notification).Error; err != nil {
 		log.Printf("Failed to create subscription notification: %v", err)
 	}
@@ -223,7 +246,7 @@ func (sc *SubscriptionController) CancelSubscription(c *fiber.Ctx) error {
 		IsRead:     false,
 		Data:       fmt.Sprintf(`{"subscriptionId": %d, "plan": "%s", "endDate": "%s"}`, subscription.ID, subscription.Plan, subscription.EndDate.Format(time.RFC3339)),
 	}
-	
+
 	if err := db.DB.Create(&notification).Error; err != nil {
 		log.Printf("Failed to create subscription cancellation notification: %v", err)
 	}
