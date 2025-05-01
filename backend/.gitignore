@@ -24,8 +24,6 @@ tmp/
 
 # Локальные настройки
 .env
-env.example
-!.env.example
 *.local
 
 # Конфигурационные файлы сборки
