@@ -62,3 +62,4 @@ tmp/
 /frontend/dist/
 /frontend/.env
 .cursor
+/docs/content
