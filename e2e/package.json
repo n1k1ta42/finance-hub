@@ -11,8 +11,8 @@
     "test:codegen": "playwright codegen"
   },
   "devDependencies": {
-    "@playwright/test": "^1.51.1",
-    "@types/node": "^22.14.1",
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
