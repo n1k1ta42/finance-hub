@@ -1,4 +1,4 @@
-import { useResetPassword, useVerifyResetToken } from '@/api/auth'
+import { useResetPassword } from '@/api/auth'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -21,12 +21,11 @@ export function ResetPasswordForm({
 }: React.ComponentProps<'div'>) {
   const navigate = useNavigate()
   const resetPassword = useResetPassword()
-  const verifyToken = useVerifyResetToken()
   const { toast } = useToast()
   // Получаем токен из URL
   const token = new URLSearchParams(window.location.search).get('token')
   const [isVerifying, setIsVerifying] = useState(true)
-  const [, setIsTokenValid] = useState(false)
+  const [isTokenValid, setIsTokenValid] = useState(false)
   // Реф для отслеживания был ли выполнен запрос проверки токена
   const verificationDoneRef = useRef(false)
 
@@ -85,27 +84,28 @@ export function ResetPasswordForm({
         return
       }
 
-      try {
-        await verifyToken.mutateAsync({ token })
-        setIsTokenValid(true)
-      } catch (error) {
+      // Простая проверка на валидность токена - токен должен быть непустой строкой
+      // и иметь минимальную длину для токена
+      if (token.length < 10) {
         setIsTokenValid(false)
         toast({
           title: 'Ошибка',
-          description: 'Недействительный или устаревший токен',
+          description: 'Недействительный токен для сброса пароля',
           variant: 'destructive',
         })
-        // Редирект на страницу логина при невалидном токене
         navigate({ to: '/login' })
-      } finally {
-        setIsVerifying(false)
-        // Отмечаем, что проверка была выполнена
-        verificationDoneRef.current = true
+      } else {
+        // Токен прошел базовую проверку - реальная проверка произойдет при отправке
+        setIsTokenValid(true)
       }
+
+      setIsVerifying(false)
+      // Отмечаем, что проверка была выполнена
+      verificationDoneRef.current = true
     }
 
     verifyUserToken()
-  }, [token]) // Убираем лишние зависимости
+  }, [token, navigate, toast])
 
   // Отображаем состояние загрузки
   if (isVerifying) {
@@ -126,6 +126,11 @@ export function ResetPasswordForm({
         </Card>
       </div>
     )
+  }
+
+  // Если токен не валидный, то форму не показываем
+  if (!isTokenValid) {
+    return null
   }
 
   return (
