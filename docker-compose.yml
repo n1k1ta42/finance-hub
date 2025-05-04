@@ -7,9 +7,6 @@ services:
     container_name: finance-hub-backend
     env_file:
       - ./backend/.env
-    depends_on:
-      postgres:
-        condition: service_healthy
     ports:
       - "3000:3000"
     networks:
