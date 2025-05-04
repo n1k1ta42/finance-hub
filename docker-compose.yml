@@ -1,30 +1,12 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: finance-hub-postgres
-    env_file:
-      - .env.docker
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - finance-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
   backend:
     build:
       context: ./backend
     container_name: finance-hub-backend
     env_file:
-      - .env.docker
+      - ./backend/.env
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,6 +20,8 @@ services:
     build:
       context: ./web
     container_name: finance-hub-web
+    env_file:
+      - ./web/.env
     depends_on:
       - backend
     ports:
@@ -51,6 +35,3 @@ services:
 networks:
   finance-network:
     driver: bridge
-
-volumes:
-  postgres_data: 
