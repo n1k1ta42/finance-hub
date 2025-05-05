@@ -217,6 +217,33 @@ function TransactionsPage() {
     setFilters(prev => ({ ...prev, ...newFilters, page: 1 }))
   }
 
+  const handleResetFilters = () => {
+    // Сбрасываем все фильтры, кроме параметров пагинации
+    setFilters({ page: 1, perPage })
+    setCurrentPage(1)
+  }
+
+  const handleResetFilter = (filterName: keyof Filters) => {
+    setFilters(prev => {
+      const newFilters = { ...prev }
+
+      // Удаляем указанный фильтр
+      if (filterName === 'startDate' || filterName === 'endDate') {
+        // Для фильтра дат сбрасываем оба параметра вместе
+        delete newFilters.startDate
+        delete newFilters.endDate
+      } else {
+        delete newFilters[filterName]
+      }
+
+      // Сбрасываем страницу на первую
+      newFilters.page = 1
+
+      return newFilters
+    })
+    setCurrentPage(1)
+  }
+
   const getPaginationItems = () => {
     const items = []
     const totalPages = paginationMeta?.total_pages || 1
@@ -351,6 +378,8 @@ function TransactionsPage() {
             filters={filters}
             categories={categories}
             onChangeFilters={handleFiltersChange}
+            onResetFilters={handleResetFilters}
+            onResetFilter={handleResetFilter}
           />
         )}
 

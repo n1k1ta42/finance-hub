@@ -21,7 +21,7 @@ func (ct *CategoryController) GetAllCategories(c *fiber.Ctx) error {
 	userID := middlewares.GetUserID(c)
 
 	var categories []models.Category
-	if err := db.DB.Where("user_id = ?", userID).Find(&categories).Error; err != nil {
+	if err := db.DB.Where("user_id = ?", userID).Order("categories.name").Find(&categories).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status":  "error",
 			"message": "Не удалось получить категории",

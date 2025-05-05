@@ -33,12 +33,16 @@ interface TransactionFiltersProps {
   filters: TransactionFilters
   categories: Category[]
   onChangeFilters: (filters: TransactionFilters) => void
+  onResetFilters?: () => void
+  onResetFilter?: (filterName: keyof TransactionFilters) => void
 }
 
 export function TransactionFilters({
   filters,
   categories,
   onChangeFilters,
+  onResetFilters,
+  onResetFilter,
 }: TransactionFiltersProps) {
   const [startDate, setStartDate] = useState<Date | undefined>(
     filters.startDate ? new Date(filters.startDate) : undefined,
@@ -59,8 +63,12 @@ export function TransactionFilters({
 
   const handleTypeChange = (value: string) => {
     if (value === 'all') {
-      const { type, ...newFilters } = filters
-      onChangeFilters(newFilters)
+      if (onResetFilter) {
+        onResetFilter('type')
+      } else {
+        const { type, ...newFilters } = filters
+        onChangeFilters(newFilters)
+      }
     } else {
       onChangeFilters({
         ...filters,
@@ -71,8 +79,12 @@ export function TransactionFilters({
 
   const handleCategoryChange = (value: string) => {
     if (value === 'all') {
-      const { categoryId, ...newFilters } = filters
-      onChangeFilters(newFilters)
+      if (onResetFilter) {
+        onResetFilter('categoryId')
+      } else {
+        const { categoryId, ...newFilters } = filters
+        onChangeFilters(newFilters)
+      }
     } else {
       onChangeFilters({
         ...filters,
@@ -84,10 +96,32 @@ export function TransactionFilters({
   const clearFilters = () => {
     setStartDate(undefined)
     setEndDate(undefined)
-    onChangeFilters({})
+
+    if (onResetFilters) {
+      onResetFilters()
+    } else {
+      // Сохраняем только параметры пагинации
+      const { page, perPage } = filters
+      onChangeFilters({ page, perPage })
+    }
   }
 
-  const hasActiveFilters = Object.keys(filters).length > 0
+  const resetDateFilter = () => {
+    setStartDate(undefined)
+    setEndDate(undefined)
+
+    if (onResetFilter) {
+      onResetFilter('startDate')
+      onResetFilter('endDate')
+    } else {
+      const { startDate, endDate, ...newFilters } = filters
+      onChangeFilters(newFilters)
+    }
+  }
+
+  const hasActiveFilters = Boolean(
+    filters.type || filters.categoryId || filters.startDate || filters.endDate,
+  )
 
   return (
     <div className='space-y-4'>
@@ -207,7 +241,7 @@ export function TransactionFilters({
                   ? `С ${formatDate(startDate)}`
                   : `По ${formatDate(endDate as Date)}`}
               <button
-                onClick={() => handleDateRangeChange(undefined, undefined)}
+                onClick={resetDateFilter}
                 className='hover:bg-muted ml-1 rounded-full p-0.5'
               >
                 <X className='h-3 w-3' />
