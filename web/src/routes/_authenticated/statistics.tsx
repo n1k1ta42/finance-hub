@@ -550,13 +550,6 @@ function Component() {
                       dataKey='value'
                       animationDuration={1000}
                       animationBegin={100}
-                      label={({
-                        name,
-                        percentage,
-                      }: {
-                        name: string
-                        percentage: number
-                      }) => `${name} (${percentage.toFixed(1)}%)`}
                     >
                       {expensePieChartData.map((_: any, index: number) => (
                         <Cell
@@ -654,13 +647,6 @@ function Component() {
                       dataKey='value'
                       animationDuration={1000}
                       animationBegin={100}
-                      label={({
-                        name,
-                        percentage,
-                      }: {
-                        name: string
-                        percentage: number
-                      }) => `${name} (${percentage.toFixed(1)}%)`}
                     >
                       {incomePieChartData.map((_: any, index: number) => (
                         <Cell

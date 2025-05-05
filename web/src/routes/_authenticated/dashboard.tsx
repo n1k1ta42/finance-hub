@@ -457,13 +457,6 @@ function Dashboard() {
                       dataKey='value'
                       animationDuration={1000}
                       animationBegin={100}
-                      label={({
-                        name,
-                        percentage,
-                      }: {
-                        name: string
-                        percentage: number
-                      }) => `${name} (${percentage.toFixed(1)}%)`}
                     >
                       {pieChartData.map((_: PieChartData, index: number) => (
                         <Cell

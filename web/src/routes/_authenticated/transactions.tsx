@@ -51,7 +51,7 @@ function TransactionsPage() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const [currentPage, setCurrentPage] = useState(1)
-  const [perPage, setPerPage] = useState(10)
+  const [perPage, setPerPage] = useState(100)
 
   const [filters, setFilters] = useState<Filters>({
     page: currentPage,
@@ -226,7 +226,7 @@ function TransactionsPage() {
       // Если страниц мало, просто показываем все
       for (let i = 1; i <= totalPages; i++) {
         items.push(
-          <PaginationItem key={i}>
+          <PaginationItem key={i} className='cursor-pointer'>
             <PaginationLink
               isActive={currentPage === i}
               onClick={() => handlePageChange(i)}
@@ -385,7 +385,9 @@ function TransactionsPage() {
                         currentPage > 1 && handlePageChange(currentPage - 1)
                       }
                       className={
-                        currentPage <= 1 ? 'pointer-events-none opacity-50' : ''
+                        currentPage <= 1
+                          ? 'pointer-events-none opacity-50'
+                          : 'cursor-pointer'
                       }
                     />
                   </PaginationItem>
@@ -399,13 +401,13 @@ function TransactionsPage() {
                       className={
                         currentPage >= (paginationMeta?.total_pages || 1)
                           ? 'pointer-events-none opacity-50'
-                          : ''
+                          : 'cursor-pointer'
                       }
                     />
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>
-              <div className='text-muted-foreground flex items-center gap-2 text-sm'>
+              <div className='text-muted-foreground flex min-w-max items-center gap-2 text-sm'>
                 <span>Показывать по:</span>
                 <select
                   className='rounded border p-1'
