@@ -19,10 +19,9 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
-  type SortingState,
 } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, Edit2, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 interface TransactionTableProps {
   data: Transaction[]
@@ -35,10 +34,6 @@ export function TransactionTable({
   onEdit,
   onDelete,
 }: TransactionTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: 'date', desc: true },
-  ])
-
   const columnHelper = createColumnHelper<Transaction>()
 
   const columns = useMemo(
@@ -106,10 +101,6 @@ export function TransactionTable({
   const table = useReactTable({
     data,
     columns,
-    state: {
-      sorting,
-    },
-    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   })
