@@ -1,3 +1,4 @@
+import { useCategories } from '@/api/categories'
 import {
   exportStatsToPDF,
   useBalanceDynamics,
@@ -24,6 +25,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSubscription } from '@/hooks/use-subscription'
+import { getCategoryIndicatorClasses } from '@/lib/category-utils'
 import { formatCurrency } from '@/lib/currency-utils'
 import { createFileRoute } from '@tanstack/react-router'
 import {
@@ -61,6 +63,15 @@ import {
 interface DateRange {
   from: Date
   to: Date
+}
+
+// Тип для данных диаграммы
+interface PieChartData {
+  name: string
+  value: number
+  percentage: number
+  categoryId: number
+  color?: string
 }
 
 export const Route = createFileRoute('/_authenticated/statistics')({
@@ -166,21 +177,205 @@ function Component() {
     '#82ca9d',
   ]
 
+  // Получение категорий для определения цветов
+  const { data: categories } = useCategories()
+
+  // Получение цвета из класса категории
+  const extractColorFromClass = (colorClass: string) => {
+    const bgColorPattern = /bg-([a-z]+)-(\d+)/
+    const match = colorClass.match(bgColorPattern)
+
+    if (match) {
+      const colorName = match[1]
+      const colorShade = match[2]
+
+      // Таблица соответствия цветов tailwind с hex-кодами
+      const tailwindColors: Record<string, Record<string, string>> = {
+        blue: {
+          '400': '#60a5fa',
+          '500': '#3b82f6',
+          '600': '#2563eb',
+          '700': '#1d4ed8',
+        },
+        red: {
+          '400': '#f87171',
+          '500': '#ef4444',
+          '600': '#dc2626',
+          '700': '#b91c1c',
+        },
+        green: {
+          '400': '#4ade80',
+          '500': '#22c55e',
+          '600': '#16a34a',
+          '700': '#15803d',
+        },
+        yellow: {
+          '500': '#eab308',
+          '600': '#ca8a04',
+          '700': '#a16207',
+        },
+        indigo: {
+          '500': '#6366f1',
+          '600': '#4f46e5',
+          '700': '#4338ca',
+        },
+        pink: {
+          '500': '#ec4899',
+          '600': '#db2777',
+          '700': '#be185d',
+        },
+        purple: {
+          '400': '#c084fc',
+          '500': '#a855f7',
+          '600': '#9333ea',
+          '700': '#7e22ce',
+          '800': '#6b21a8',
+          '900': '#581c87',
+        },
+        violet: {
+          '300': '#c4b5fd',
+          '400': '#a78bfa',
+          '500': '#8b5cf6',
+        },
+        zinc: {
+          '500': '#71717a',
+          '600': '#52525b',
+          '700': '#3f3f46',
+        },
+        slate: {
+          '700': '#334155',
+          '800': '#1e293b',
+          '900': '#0f172a',
+        },
+        gray: {
+          '500': '#6b7280',
+          '600': '#4b5563',
+          '700': '#374151',
+        },
+        stone: {
+          '500': '#78716c',
+          '600': '#57534e',
+          '700': '#44403c',
+        },
+        orange: {
+          '500': '#f97316',
+          '600': '#ea580c',
+          '700': '#c2410c',
+        },
+        amber: {
+          '500': '#f59e0b',
+          '600': '#d97706',
+          '700': '#b45309',
+        },
+        lime: {
+          '500': '#84cc16',
+          '600': '#65a30d',
+          '700': '#4d7c0f',
+        },
+        emerald: {
+          '300': '#6ee7b7',
+          '400': '#34d399',
+          '500': '#10b981',
+        },
+        teal: {
+          '400': '#2dd4bf',
+          '500': '#14b8a6',
+          '600': '#0d9488',
+        },
+        sky: {
+          '500': '#0ea5e9',
+          '600': '#0284c7',
+          '700': '#0369a1',
+        },
+        cyan: {
+          '500': '#06b6d4',
+          '600': '#0891b2',
+          '700': '#0e7490',
+        },
+        fuchsia: {
+          '500': '#d946ef',
+          '600': '#c026d3',
+          '700': '#a21caf',
+        },
+        rose: {
+          '300': '#fda4af',
+          '400': '#fb7185',
+          '500': '#f43f5e',
+        },
+      }
+
+      if (tailwindColors[colorName] && tailwindColors[colorName][colorShade]) {
+        return tailwindColors[colorName][colorShade]
+      }
+    }
+
+    // Запасные цвета по умолчанию
+    const defaultColors = [
+      '#3b82f6',
+      '#ef4444',
+      '#22c55e',
+      '#eab308',
+      '#6366f1',
+      '#ec4899',
+      '#a855f7',
+      '#71717a',
+      '#f97316',
+      '#14b8a6',
+    ]
+
+    // Хеш строки для получения стабильного цвета
+    const hash = colorClass.split('').reduce((acc, char) => {
+      return char.charCodeAt(0) + ((acc << 5) - acc)
+    }, 0)
+
+    return defaultColors[Math.abs(hash) % defaultColors.length]
+  }
+
   // Преобразование данных категорий для графика расходов
   const expensePieChartData =
-    expenseCategoryData?.categories?.map((category: CategoryStat) => ({
-      name: category.categoryName,
-      value: category.amount,
-      percentage: category.percentage,
-    })) || []
+    expenseCategoryData?.categories && categories
+      ? expenseCategoryData.categories.map((category: CategoryStat) => {
+          // Находим соответствующую категорию, чтобы получить её цвет
+          const foundCategory = categories.find(
+            c => c.id === category.categoryId,
+          )
+          const colorClass = foundCategory
+            ? getCategoryIndicatorClasses(foundCategory.color)
+            : ''
+          const color = extractColorFromClass(colorClass)
+
+          return {
+            name: category.categoryName,
+            value: category.amount,
+            percentage: category.percentage,
+            categoryId: category.categoryId,
+            color: color,
+          }
+        })
+      : []
 
   // Преобразование данных категорий для графика доходов
   const incomePieChartData =
-    incomeCategoryData?.categories?.map((category: CategoryStat) => ({
-      name: category.categoryName,
-      value: category.amount,
-      percentage: category.percentage,
-    })) || []
+    incomeCategoryData?.categories && categories
+      ? incomeCategoryData.categories.map((category: CategoryStat) => {
+          // Находим соответствующую категорию, чтобы получить её цвет
+          const foundCategory = categories.find(
+            c => c.id === category.categoryId,
+          )
+          const colorClass = foundCategory
+            ? getCategoryIndicatorClasses(foundCategory.color)
+            : ''
+          const color = extractColorFromClass(colorClass)
+
+          return {
+            name: category.categoryName,
+            value: category.amount,
+            percentage: category.percentage,
+            categoryId: category.categoryId,
+            color: color,
+          }
+        })
+      : []
 
   // Переменная состояния для переключения между типами графиков
   const [chartType, setChartType] = useState<'bar' | 'pie'>('pie')
@@ -551,12 +746,14 @@ function Component() {
                       animationDuration={1000}
                       animationBegin={100}
                     >
-                      {expensePieChartData.map((_: any, index: number) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
+                      {expensePieChartData.map(
+                        (entry: PieChartData, index: number) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color || COLORS[index % COLORS.length]}
+                          />
+                        ),
+                      )}
                     </Pie>
                     <Tooltip
                       formatter={(value: number, _name: string, props: any) => [
@@ -588,12 +785,14 @@ function Component() {
                       ]}
                     />
                     <Bar dataKey='value' fill='#ff7675'>
-                      {expensePieChartData.map((_: any, index: number) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
+                      {expensePieChartData.map(
+                        (entry: PieChartData, index: number) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color || COLORS[index % COLORS.length]}
+                          />
+                        ),
+                      )}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -643,17 +842,19 @@ function Component() {
                       innerRadius={60}
                       outerRadius={80}
                       fill='#8884d8'
-                      paddingAngle={5}
+                      paddingAngle={1}
                       dataKey='value'
                       animationDuration={1000}
                       animationBegin={100}
                     >
-                      {incomePieChartData.map((_: any, index: number) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
+                      {incomePieChartData.map(
+                        (entry: PieChartData, index: number) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color || COLORS[index % COLORS.length]}
+                          />
+                        ),
+                      )}
                     </Pie>
                     <Tooltip
                       formatter={(value: number, _name: string, props: any) => [
@@ -685,12 +886,14 @@ function Component() {
                       ]}
                     />
                     <Bar dataKey='value' fill='#82ca9d'>
-                      {incomePieChartData.map((_: any, index: number) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
+                      {incomePieChartData.map(
+                        (entry: PieChartData, index: number) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color || COLORS[index % COLORS.length]}
+                          />
+                        ),
+                      )}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>

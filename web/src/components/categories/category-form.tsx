@@ -192,27 +192,29 @@ export function CategoryForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Цвет</FormLabel>
-              <div className='grid grid-cols-4 gap-2'>
-                {colors.map(color => (
-                  <Button
-                    key={color.value}
-                    type='button'
-                    className={cn(
-                      getCategoryButtonClasses(color.value),
-                      field.value === color.value
-                        ? 'ring-offset-background ring-ring ring-2 ring-offset-2'
-                        : '',
-                    )}
-                    variant={
-                      field.value === color.value ? 'default' : 'outline'
-                    }
-                    onClick={() => form.setValue('color', color.value)}
-                  >
-                    {field.value === color.value && (
-                      <span className='ml-2'>✓</span>
-                    )}
-                  </Button>
-                ))}
+              <div className='max-h-[220px] overflow-y-auto'>
+                <div className='grid grid-cols-5 gap-2'>
+                  {colors.map(color => (
+                    <Button
+                      key={color.value}
+                      type='button'
+                      className={cn(
+                        getCategoryButtonClasses(color.value),
+                        field.value === color.value
+                          ? 'ring-offset-background ring-ring ring-2 ring-offset-2'
+                          : '',
+                      )}
+                      variant={
+                        field.value === color.value ? 'default' : 'outline'
+                      }
+                      onClick={() => form.setValue('color', color.value)}
+                    >
+                      {field.value === color.value && (
+                        <span className='ml-2'>✓</span>
+                      )}
+                    </Button>
+                  ))}
+                </div>
               </div>
               <div className='text-muted-foreground mt-2 text-xs'>
                 Выбран: {getCategoryColorLabel(field.value)}
