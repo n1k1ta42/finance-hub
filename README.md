@@ -17,7 +17,7 @@
 
 - **Веб-приложение**: [https://finance-hub.app](https://finance-hub.app)
 - **GitHub**: [https://github.com/n1k1ta42/finance-hub](https://github.com/n1k1ta42/finance-hub)
-- **Телеграм-канал**: [https://t.me/finance_hub_app](https://t.me/finance_hub_app)
+- **Телеграм-канал**: [https://t.me/financehub_app](https://t.me/finance_hub_app)
 - **Чат пользователей**: [@financehub_app_chat](https://t.me/financehub_app_chat)
 - **Автор**: [@n1k1ta42](https://t.me/nikita_gorchakov)
 
