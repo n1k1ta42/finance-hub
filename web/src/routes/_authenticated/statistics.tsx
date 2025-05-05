@@ -546,7 +546,7 @@ function Component() {
                       innerRadius={60}
                       outerRadius={80}
                       fill='#8884d8'
-                      paddingAngle={5}
+                      paddingAngle={1}
                       dataKey='value'
                       animationDuration={1000}
                       animationBegin={100}
@@ -559,9 +559,9 @@ function Component() {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value: number) => [
-                        formatCurrency(value),
-                        'Сумма',
+                      formatter={(value: number, _name: string, props: any) => [
+                        `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
+                        props.payload.name,
                       ]}
                     />
                     <Legend />
@@ -582,9 +582,9 @@ function Component() {
                     />
                     <YAxis />
                     <Tooltip
-                      formatter={(value: number) => [
-                        formatCurrency(value),
-                        'Сумма',
+                      formatter={(value: number, _name: string, props: any) => [
+                        `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
+                        props.payload.name,
                       ]}
                     />
                     <Bar dataKey='value' fill='#ff7675'>
@@ -656,9 +656,9 @@ function Component() {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value: number) => [
-                        formatCurrency(value),
-                        'Сумма',
+                      formatter={(value: number, _name: string, props: any) => [
+                        `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
+                        props.payload.name,
                       ]}
                     />
                     <Legend />
@@ -679,9 +679,9 @@ function Component() {
                     />
                     <YAxis />
                     <Tooltip
-                      formatter={(value: number) => [
-                        formatCurrency(value),
-                        'Сумма',
+                      formatter={(value: number, _name: string, props: any) => [
+                        `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
+                        props.payload.name,
                       ]}
                     />
                     <Bar dataKey='value' fill='#82ca9d'>

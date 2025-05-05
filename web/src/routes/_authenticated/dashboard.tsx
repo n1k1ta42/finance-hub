@@ -453,7 +453,7 @@ function Dashboard() {
                       innerRadius={60}
                       outerRadius={80}
                       fill='#8884d8'
-                      paddingAngle={5}
+                      paddingAngle={1}
                       dataKey='value'
                       animationDuration={1000}
                       animationBegin={100}
@@ -466,9 +466,9 @@ function Dashboard() {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value: number) => [
-                        formatCurrency(value),
-                        'Сумма',
+                      formatter={(value: number, _name: string, props: any) => [
+                        `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
+                        props.payload.name,
                       ]}
                     />
                     <Legend />
