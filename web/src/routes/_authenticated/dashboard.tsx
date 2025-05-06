@@ -49,8 +49,10 @@ import { ru } from 'date-fns/locale'
 import {
   ArrowDownCircle,
   ArrowUpCircle,
+  BarChart3,
   Calendar as CalendarIcon,
   ChevronDown,
+  List,
   ListOrdered,
   Plus,
   RefreshCcw,
@@ -91,6 +93,7 @@ function Dashboard() {
   const { data: user } = useMe()
   const { canAccess } = useSubscription()
   const [isAddingTransaction, setIsAddingTransaction] = useState(false)
+  const [viewMode, setViewMode] = useState<'chart' | 'list'>('chart')
   const navigate = useNavigate()
 
   // Используем текущий месяц как период по умолчанию
@@ -384,6 +387,9 @@ function Dashboard() {
         })
       : []
 
+  // Удаляем сортировку ограничением топ-5 и оставляем только сортировку
+  const sortedCategoriesData = pieChartData.sort((a, b) => b.value - a.value)
+
   // Цвета для графиков
   const COLORS = [
     '#0088FE',
@@ -577,10 +583,37 @@ function Dashboard() {
         <div className='md:col-span-5'>
           <Card className='h-[350px] transition-all duration-300 hover:shadow-md'>
             <CardHeader>
-              <CardTitle>Расходы по категориям</CardTitle>
-              <CardDescription>
-                Распределение расходов за период {formatDateRange(dateRange)}
-              </CardDescription>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <CardTitle>Расходы по категориям</CardTitle>
+                  <CardDescription>
+                    Распределение расходов за период{' '}
+                    {formatDateRange(dateRange)}
+                  </CardDescription>
+                </div>
+                {canAccess('premium') && pieChartData.length > 0 && (
+                  <div className='flex space-x-1'>
+                    <Button
+                      variant={viewMode === 'chart' ? 'default' : 'outline'}
+                      size='icon'
+                      onClick={() => setViewMode('chart')}
+                      className='h-8 w-8'
+                      title='Показать диаграмму'
+                    >
+                      <BarChart3 className='h-4 w-4' />
+                    </Button>
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'outline'}
+                      size='icon'
+                      onClick={() => setViewMode('list')}
+                      className='h-8 w-8'
+                      title='Показать список'
+                    >
+                      <List className='h-4 w-4' />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className='h-[250px]'>
               {!canAccess('premium') ? (
@@ -610,7 +643,7 @@ function Dashboard() {
                     Нет данных за выбранный период
                   </p>
                 </div>
-              ) : (
+              ) : viewMode === 'chart' ? (
                 <ResponsiveContainer width='100%' height='100%'>
                   <PieChart>
                     <Pie
@@ -643,6 +676,43 @@ function Dashboard() {
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
+              ) : (
+                <div className='h-full overflow-y-auto pr-2'>
+                  <h3 className='mb-3 text-sm font-medium'>
+                    Все категории расходов
+                  </h3>
+                  <div className='space-y-3'>
+                    {sortedCategoriesData.map((category, index) => (
+                      <div
+                        key={category.categoryId}
+                        className='flex items-center justify-between rounded-md border p-3 transition-all duration-200'
+                      >
+                        <div className='flex items-center space-x-3'>
+                          <div
+                            className='flex h-8 w-8 items-center justify-center rounded-full'
+                            style={{
+                              backgroundColor:
+                                category.color || COLORS[index % COLORS.length],
+                            }}
+                          >
+                            <span className='text-xs font-bold text-white'>
+                              {index + 1}
+                            </span>
+                          </div>
+                          <div>
+                            <p className='font-medium'>{category.name}</p>
+                            <p className='text-muted-foreground text-xs'>
+                              {category.percentage.toFixed(1)}% от всех расходов
+                            </p>
+                          </div>
+                        </div>
+                        <div className='font-medium text-rose-500'>
+                          -{formatCurrency(category.value)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
