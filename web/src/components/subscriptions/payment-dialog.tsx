@@ -157,6 +157,20 @@ export function PaymentDialog({
 
         {step === 'details' && (
           <div className='grid gap-4 py-4'>
+            <div className='mb-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-800'>
+              <div className='flex items-start'>
+                <AlertCircle className='mt-0.5 mr-2 h-5 w-5 text-amber-600' />
+                <div>
+                  <p className='text-sm font-medium'>Тестовый режим</p>
+                  <p className='mt-1 text-xs'>
+                    В настоящий момент система оплаты работает в тестовом
+                    режиме. Вы можете ввести любые тестовые данные карты без
+                    реального списания средств.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className='grid gap-2'>
               <Label htmlFor='card-number'>Номер карты</Label>
               <div className='relative'>
@@ -248,6 +262,10 @@ export function PaymentDialog({
             <CheckCircle className='mb-4 h-12 w-12 text-green-500' />
             <p className='text-muted-foreground text-center text-sm'>
               Спасибо за оплату! Ваша подписка успешно активирована.
+            </p>
+            <p className='text-muted-foreground mt-2 text-center text-xs'>
+              Напоминаем, что система работает в тестовом режиме, реального
+              списания средств не произошло.
             </p>
           </div>
         )}

@@ -4,8 +4,9 @@ import { Layout } from '@/components/layout.tsx'
 import { PaymentDialog } from '@/components/subscriptions/payment-dialog.tsx'
 import { PeriodTabs } from '@/components/subscriptions/period-tabs.tsx'
 import { PlanCard } from '@/components/subscriptions/plan-card.tsx'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { createFileRoute } from '@tanstack/react-router'
-import { Loader } from 'lucide-react'
+import { InfoIcon, Loader } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 export const Route = createFileRoute('/_authenticated/subscriptions')({
@@ -40,6 +41,18 @@ function Component() {
     <Layout links={[{ href: '/subscriptions', label: 'Подписка' }]}>
       <div className='container py-6'>
         <h1 className='mb-4 text-3xl font-bold tracking-tight'>Подписка</h1>
+
+        <Alert className='mb-6 border-blue-200 bg-blue-50'>
+          <InfoIcon className='h-4 w-4 text-blue-600' />
+          <AlertTitle className='text-blue-800'>Тестовый режим</AlertTitle>
+          <AlertDescription className='text-blue-700'>
+            <strong>Важно</strong> В настоящий момент функционал подписок
+            работает в тестовом режиме. Вы можете протестировать любой план без
+            реального списания средств. В будущем мы планируем запустить
+            полноценную систему платных подписок для финансирования проекта без
+            рекламы.
+          </AlertDescription>
+        </Alert>
 
         {isLoading ? (
           <div className='flex h-64 items-center justify-center'>
