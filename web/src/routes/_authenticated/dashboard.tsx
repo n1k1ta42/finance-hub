@@ -93,7 +93,7 @@ function Dashboard() {
   const { data: user } = useMe()
   const { canAccess } = useSubscription()
   const [isAddingTransaction, setIsAddingTransaction] = useState(false)
-  const [viewMode, setViewMode] = useState<'chart' | 'list'>('chart')
+  const [viewMode, setViewMode] = useState<'chart' | 'list'>('list')
   const navigate = useNavigate()
 
   // Используем текущий месяц как период по умолчанию
