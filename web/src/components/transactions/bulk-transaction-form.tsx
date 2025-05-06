@@ -69,7 +69,7 @@ export function BulkTransactionForm({
       date: new Date(),
       transactions: [
         {
-          amount: 0,
+          amount: undefined as unknown as number,
           description: '',
           categoryId: 0,
         },
@@ -113,7 +113,7 @@ export function BulkTransactionForm({
 
   const addTransaction = () => {
     append({
-      amount: 0,
+      amount: undefined as unknown as number,
       description: '',
       categoryId: 0,
     })
