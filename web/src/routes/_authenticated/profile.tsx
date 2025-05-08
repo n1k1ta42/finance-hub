@@ -269,7 +269,12 @@ function ProfilePage() {
                     <li>
                       Найдите бота{' '}
                       <span className='font-semibold'>
-                        @finance_hub_client_bot
+                        <a
+                          href='https://t.me/Finance_hub_app_bot'
+                          target='_blank'
+                        >
+                          @Finance_hub_app_bot
+                        </a>
                       </span>{' '}
                       в Telegram
                     </li>
