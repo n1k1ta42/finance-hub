@@ -353,9 +353,28 @@ func (a *AuthController) UpdateMe(c *fiber.Ctx) error {
 		}
 	}
 
+	// Шифруем имя и фамилию перед сохранением
+	encFirstName, err := utils.EncryptString(input.FirstName)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Ошибка шифрования имени",
+			"error":   err.Error(),
+		})
+	}
+
+	encLastName, err := utils.EncryptString(input.LastName)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Ошибка шифрования фамилии",
+			"error":   err.Error(),
+		})
+	}
+
 	user.Email = input.Email
-	user.FirstName = input.FirstName
-	user.LastName = input.LastName
+	user.FirstName = encFirstName
+	user.LastName = encLastName
 	user.TelegramChatID = input.TelegramChatID
 
 	if err := db.DB.Save(&user).Error; err != nil {
@@ -366,6 +385,7 @@ func (a *AuthController) UpdateMe(c *fiber.Ctx) error {
 		})
 	}
 
+	// Дешифруем для ответа
 	user.FirstName, _ = utils.DecryptString(user.FirstName)
 	user.LastName, _ = utils.DecryptString(user.LastName)
 
