@@ -20,6 +20,7 @@ import {
   ChartColumn,
   Component,
   CreditCard,
+  Github,
   Landmark,
   LayoutDashboard,
   LifeBuoy,
@@ -92,6 +93,12 @@ const data = {
       title: 'Отзывы',
       url: '/reviews',
       icon: Send,
+    },
+    {
+      title: 'GitHub',
+      url: 'https://github.com/n1k1ta42/finance-hub',
+      icon: Github,
+      external: true,
     },
   ],
 }
