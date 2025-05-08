@@ -1,7 +1,6 @@
 services:
   backend:
-    build:
-      context: ./backend
+    image: n1k1ta42/finance-hub-backend
     container_name: finance-hub-backend
     env_file:
       - ./backend/.env
@@ -12,8 +11,7 @@ services:
     restart: unless-stopped
 
   web:
-    build:
-      context: ./web
+    image: n1k1ta42/finance-hub-web
     container_name: finance-hub-web
     env_file:
       - ./web/.env
