@@ -74,8 +74,17 @@ jobs:
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          # Сохраняем ключ и очищаем его от возможных проблем с форматированием
+          echo "${{ secrets.VPS_SSH_KEY }}" | sed 's/\\n/\n/g' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          # Отладка - проверяем формат ключа (скрывая его содержимое)
+          echo "Проверка формата ключа:"
+          head -n 1 ~/.ssh/id_rsa
+          echo "..."
+          tail -n 1 ~/.ssh/id_rsa
+          # Проверка валидности ключа
+          ssh-keygen -l -f ~/.ssh/id_rsa || echo "Ключ может быть некорректным"
+          # Добавляем хост в known_hosts
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to VPS
