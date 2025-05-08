@@ -106,7 +106,7 @@ jobs:
 
       - name: Upload deploy notification
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: deploy-notification
           path: deploy-notification.md
