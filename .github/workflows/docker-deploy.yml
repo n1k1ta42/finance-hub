@@ -1,0 +1,113 @@
+name: Deploy to VPS
+
+on:
+  # Запуск после успешного завершения сборки Docker-образов
+  workflow_run:
+    workflows: ["Docker Build and Push"]
+    types:
+      - completed
+    branches:
+      - main
+      - master
+
+  # Ручной запуск
+  workflow_dispatch:
+    inputs:
+      docker_tag:
+        description: "Тег Docker-образа для деплоя (по умолчанию latest)"
+        required: false
+        default: "latest"
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set Docker image tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "TAG=${{ github.event.inputs.docker_tag }}" >> $GITHUB_ENV
+          else
+            SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+            echo "TAG=${SHORT_SHA}" >> $GITHUB_ENV
+          fi
+
+          DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}"
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d "/" -f 2)
+
+          echo "BACKEND_IMAGE=${DOCKER_USERNAME}/${REPO_NAME}-backend:${TAG}" >> $GITHUB_ENV
+          echo "WEB_IMAGE=${DOCKER_USERNAME}/${REPO_NAME}-web:${TAG}" >> $GITHUB_ENV
+
+      - name: Update docker-compose.yml with image tags
+        run: |
+          sed -i "s|build:\\s*context: ./backend|image: ${{ env.BACKEND_IMAGE }}|g" docker-compose.yml
+          sed -i "s|build:\\s*context: ./web|image: ${{ env.WEB_IMAGE }}|g" docker-compose.yml
+          cat docker-compose.yml
+
+      - name: Create deploy script
+        run: |
+          cat > deploy.sh << 'EOL'
+          #!/bin/bash
+
+          # Перейти в нужную директорию
+          cd /var/www/finance-hub
+
+          # Скачать новые образы
+          docker compose pull
+
+          # Перезапустить сервисы
+          docker compose up -d
+
+          # Удалить неиспользуемые образы для экономии места
+          docker image prune -f
+
+          echo "Деплой успешно завершен!"
+          EOL
+
+          chmod +x deploy.sh
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS
+        run: |
+          # Копирование обновленного docker-compose.yml
+          scp -P ${{ secrets.VPS_PORT || 22 }} docker-compose.yml ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/var/www/finance-hub/docker-compose.yml
+
+          # Копирование скрипта деплоя
+          scp -P ${{ secrets.VPS_PORT || 22 }} deploy.sh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/tmp/deploy.sh
+
+          # Запуск скрипта деплоя
+          ssh -p ${{ secrets.VPS_PORT || 22 }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash /tmp/deploy.sh'
+
+      - name: Cleanup SSH key
+        run: rm -f ~/.ssh/id_rsa
+
+      - name: Send notification about deploy
+        if: success()
+        run: |
+          echo "## 🚀 Деплой успешно выполнен" > deploy-notification.md
+          echo "" >> deploy-notification.md
+          echo "**Образы:**" >> deploy-notification.md
+          echo "- Backend: \`${{ env.BACKEND_IMAGE }}\`" >> deploy-notification.md
+          echo "- Web: \`${{ env.WEB_IMAGE }}\`" >> deploy-notification.md
+          echo "" >> deploy-notification.md
+          echo "**Хост:** \`${{ secrets.VPS_HOST }}\`" >> deploy-notification.md
+          echo "**Дата:** $(date)" >> deploy-notification.md
+
+      - name: Upload deploy notification
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: deploy-notification
+          path: deploy-notification.md
+          retention-days: 7

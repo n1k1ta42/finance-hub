@@ -1,0 +1,137 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+      - "CONTRIBUTING.md"
+      - "docs/**"
+  workflow_dispatch:
+
+jobs:
+  docker:
+    name: Build and Push Docker images
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set image names and tags
+        id: meta
+        run: |
+          DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}"
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d "/" -f 2)
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+
+          echo "BACKEND_IMAGE=${DOCKER_USERNAME}/${REPO_NAME}-backend" >> $GITHUB_ENV
+          echo "WEB_IMAGE=${DOCKER_USERNAME}/${REPO_NAME}-web" >> $GITHUB_ENV
+          echo "TAG=${SHORT_SHA}" >> $GITHUB_ENV
+
+      - name: Create backend .env file
+        run: |
+          cat > ./backend/.env << EOL
+          DB_HOST=${{ secrets.DB_HOST }}
+          DB_PORT=${{ secrets.DB_PORT }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_NAME=${{ secrets.DB_NAME }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          PORT=3000
+          ENV=${{ secrets.ENV }}
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_PORT=${{ secrets.SMTP_PORT }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM=${{ secrets.SMTP_FROM }}
+          ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}
+          TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CLIENT_BOT_TOKEN=${{ secrets.TELEGRAM_CLIENT_BOT_TOKEN }}
+          TELEGRAM_CLIENT_BOT_DEBUG=${{ secrets.TELEGRAM_CLIENT_BOT_DEBUG }}
+          EOL
+
+      - name: Create web .env file
+        run: |
+          cat > ./web/.env << EOL
+          VITE_API_URL=${{ secrets.VITE_API_URL }}
+          EOL
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.BACKEND_IMAGE }}:${{ env.TAG }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Build and push web image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./web
+          push: true
+          tags: |
+            ${{ env.WEB_IMAGE }}:latest
+            ${{ env.WEB_IMAGE }}:${{ env.TAG }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      # Обновление файла docker-compose с новыми тегами образов
+      - name: Update docker-compose.yml
+        run: |
+          sed -i "s|build:\\s*context: ./backend|image: ${{ env.BACKEND_IMAGE }}:${{ env.TAG }}|g" docker-compose.yml
+          sed -i "s|build:\\s*context: ./web|image: ${{ env.WEB_IMAGE }}:${{ env.TAG }}|g" docker-compose.yml
+          cat docker-compose.yml
+
+      # Временная очистка кеша для предотвращения его бесконечного роста
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Create deployment instructions
+        if: success()
+        run: |
+          echo "## Deployment Instructions" > deployment.md
+          echo "To deploy this version, use:" >> deployment.md
+          echo '```bash' >> deployment.md
+          echo "docker-compose pull" >> deployment.md
+          echo "docker-compose up -d" >> deployment.md
+          echo '```' >> deployment.md
+          echo "" >> deployment.md
+          echo "Backend Image: \`${{ env.BACKEND_IMAGE }}:${{ env.TAG }}\`" >> deployment.md
+          echo "Web Image: \`${{ env.WEB_IMAGE }}:${{ env.TAG }}\`" >> deployment.md
+
+      - name: Upload deployment instructions
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-instructions
+          path: deployment.md
+          retention-days: 7
