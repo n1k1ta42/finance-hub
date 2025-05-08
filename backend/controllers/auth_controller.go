@@ -356,6 +356,7 @@ func (a *AuthController) UpdateMe(c *fiber.Ctx) error {
 	user.Email = input.Email
 	user.FirstName = input.FirstName
 	user.LastName = input.LastName
+	user.TelegramChatID = input.TelegramChatID
 
 	if err := db.DB.Save(&user).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

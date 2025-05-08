@@ -104,6 +104,14 @@ function ProfilePage() {
                       {formatFullDate(new Date(user.createdAt))}
                     </div>
                   </div>
+                  <div>
+                    <div className='text-muted-foreground text-sm'>
+                      Telegram ID
+                    </div>
+                    <div className='font-medium'>
+                      {user.telegramChatId ? user.telegramChatId : 'Не указан'}
+                    </div>
+                  </div>
                 </>
               )}
             </CardContent>
@@ -120,119 +128,184 @@ function ProfilePage() {
           </Card>
 
           {/* Карточка подписки */}
-          <Card>
-            <CardHeader>
-              <div className='flex items-center space-x-4'>
-                <div className='bg-primary/10 rounded-full p-4'>
-                  <CreditCard className='text-primary h-8 w-8' />
-                </div>
-                <div>
-                  <CardTitle className='text-xl'>Подписка</CardTitle>
-                  <CardDescription>Информация о вашей подписке</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className='flex-1 space-y-4'>
-              {subscriptionData?.subscription ? (
-                <>
-                  <div className='flex items-center justify-between'>
-                    <div className='text-muted-foreground text-sm'>
-                      Текущий план
-                    </div>
-                    <Badge
-                      variant={
-                        subscriptionData.subscription.active
-                          ? 'default'
-                          : 'destructive'
-                      }
-                    >
-                      {subscriptionData.subscription.active
-                        ? 'Активна'
-                        : 'Неактивна'}
-                    </Badge>
+          <div className='space-y-6'>
+            <Card>
+              <CardHeader>
+                <div className='flex items-center space-x-4'>
+                  <div className='bg-primary/10 rounded-full p-4'>
+                    <CreditCard className='text-primary h-8 w-8' />
                   </div>
-                  <div className='bg-muted rounded-lg p-4'>
-                    <div className='text-xl font-semibold'>
-                      {planLabels[subscriptionData.subscription.plan] ||
-                        subscriptionData.subscription.plan}
-                    </div>
-                    <div className='text-muted-foreground text-sm'>
-                      {periodLabels[subscriptionData.subscription.period] ||
-                        subscriptionData.subscription.period}
-                    </div>
+                  <div>
+                    <CardTitle className='text-xl'>Подписка</CardTitle>
+                    <CardDescription>
+                      Информация о вашей подписке
+                    </CardDescription>
                   </div>
-
-                  <div className='grid grid-cols-2 gap-4'>
-                    <div className='flex items-start space-x-2'>
-                      <CalendarRange className='text-muted-foreground h-5 w-5' />
-                      <div>
-                        <div className='text-muted-foreground text-sm'>
-                          Начало
-                        </div>
-                        <div className='font-medium'>
-                          {formatFullDate(
-                            new Date(subscriptionData.subscription.startDate),
-                          )}
-                        </div>
+                </div>
+              </CardHeader>
+              <CardContent className='flex-1 space-y-4'>
+                {subscriptionData?.subscription ? (
+                  <>
+                    <div className='flex items-center justify-between'>
+                      <div className='text-muted-foreground text-sm'>
+                        Текущий план
+                      </div>
+                      <Badge
+                        variant={
+                          subscriptionData.subscription.active
+                            ? 'default'
+                            : 'destructive'
+                        }
+                      >
+                        {subscriptionData.subscription.active
+                          ? 'Активна'
+                          : 'Неактивна'}
+                      </Badge>
+                    </div>
+                    <div className='bg-muted rounded-lg p-4'>
+                      <div className='text-xl font-semibold'>
+                        {planLabels[subscriptionData.subscription.plan] ||
+                          subscriptionData.subscription.plan}
+                      </div>
+                      <div className='text-muted-foreground text-sm'>
+                        {periodLabels[subscriptionData.subscription.period] ||
+                          subscriptionData.subscription.period}
                       </div>
                     </div>
-                    {subscriptionData.subscription.endDate && (
+
+                    <div className='grid grid-cols-2 gap-4'>
                       <div className='flex items-start space-x-2'>
-                        <Clock className='text-muted-foreground h-5 w-5' />
+                        <CalendarRange className='text-muted-foreground h-5 w-5' />
                         <div>
                           <div className='text-muted-foreground text-sm'>
-                            Окончание
+                            Начало
                           </div>
                           <div className='font-medium'>
                             {formatFullDate(
-                              new Date(subscriptionData.subscription.endDate),
+                              new Date(subscriptionData.subscription.startDate),
                             )}
                           </div>
                         </div>
                       </div>
-                    )}
-                  </div>
-
-                  <Separator />
-
-                  <div>
-                    <div className='mb-2 font-medium'>Доступные функции:</div>
-                    <div className='space-y-2'>
-                      {subscriptionData.features.map((feature, index) => (
-                        <div
-                          key={index}
-                          className='flex items-center space-x-2'
-                        >
-                          <Check className='text-primary h-4 w-4' />
-                          <span className='text-sm'>{feature}</span>
+                      {subscriptionData.subscription.endDate && (
+                        <div className='flex items-start space-x-2'>
+                          <Clock className='text-muted-foreground h-5 w-5' />
+                          <div>
+                            <div className='text-muted-foreground text-sm'>
+                              Окончание
+                            </div>
+                            <div className='font-medium'>
+                              {formatFullDate(
+                                new Date(subscriptionData.subscription.endDate),
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      ))}
+                      )}
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <div className='mb-2 font-medium'>Доступные функции:</div>
+                      <div className='space-y-2'>
+                        {subscriptionData.features.map((feature, index) => (
+                          <div
+                            key={index}
+                            className='flex items-center space-x-2'
+                          >
+                            <Check className='text-primary h-4 w-4' />
+                            <span className='text-sm'>{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className='py-4 text-center'>
+                    <div className='text-muted-foreground'>
+                      Информация о подписке не найдена
                     </div>
                   </div>
-                </>
-              ) : (
-                <div className='py-6 text-center'>
-                  <div className='text-muted-foreground mb-2'>
-                    У вас нет активной подписки
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Новая карточка для Telegram-бота */}
+            <Card>
+              <CardHeader>
+                <div className='flex items-center space-x-4'>
+                  <div className='bg-primary/10 rounded-full p-4'>
+                    <svg
+                      className='text-primary h-8 w-8'
+                      xmlns='http://www.w3.org/2000/svg'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      stroke='currentColor'
+                      strokeWidth='2'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                    >
+                      <path d='M21.82 9.24A1.74 1.74 0 0 0 21.94 8c0-.91-.71-1.65-1.59-1.65H3.74C2.85 6.35 2.15 7.09 2.15 8c0 .44.18.85.47 1.14' />
+                      <path d='M22 8v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8' />
+                      <path d='m19 8-7 5-7-5' />
+                    </svg>
                   </div>
-                  <Button onClick={() => navigate({ to: '/subscriptions' })}>
-                    Оформить подписку
-                  </Button>
+                  <div>
+                    <CardTitle className='text-xl'>Telegram-бот</CardTitle>
+                    <CardDescription>
+                      Управление транзакциями через Telegram
+                    </CardDescription>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-            {subscriptionData?.subscription && (
-              <CardFooter>
-                <Button
-                  variant='outline'
-                  className='w-full'
-                  onClick={() => navigate({ to: '/subscriptions' })}
-                >
-                  Изменить тариф
-                </Button>
-              </CardFooter>
-            )}
-          </Card>
+              </CardHeader>
+              <CardContent className='flex-1 space-y-4'>
+                <div>
+                  <p className='mb-4'>
+                    Вы можете создавать транзакции через наш Telegram-бот.
+                    Следуйте инструкциям ниже:
+                  </p>
+                  <ol className='list-inside list-decimal space-y-2'>
+                    <li>
+                      Найдите бота{' '}
+                      <span className='font-semibold'>
+                        @finance_hub_client_bot
+                      </span>{' '}
+                      в Telegram
+                    </li>
+                    <li>
+                      Отправьте боту команду{' '}
+                      <span className='font-semibold'>/start</span>
+                    </li>
+                    <li>Бот сообщит вам ваш Telegram Chat ID</li>
+                    <li>Введите этот ID в профиле выше</li>
+                    <li>
+                      После сохранения ID бот будет привязан к вашему аккаунту
+                    </li>
+                    <li>
+                      Используйте команду{' '}
+                      <span className='font-semibold'>/add</span> для создания
+                      транзакций
+                    </li>
+                  </ol>
+                </div>
+                <div className='mt-4'>
+                  <div className='text-muted-foreground flex items-center text-sm'>
+                    <Check className='mr-2 h-4 w-4 text-green-500' />
+                    <span>Быстрое добавление транзакций</span>
+                  </div>
+                  <div className='text-muted-foreground flex items-center text-sm'>
+                    <Check className='mr-2 h-4 w-4 text-green-500' />
+                    <span>Использование существующих категорий</span>
+                  </div>
+                  <div className='text-muted-foreground flex items-center text-sm'>
+                    <Check className='mr-2 h-4 w-4 text-green-500' />
+                    <span>Удобный доступ из мессенджера</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
 

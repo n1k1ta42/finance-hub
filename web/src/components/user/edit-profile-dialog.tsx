@@ -34,6 +34,7 @@ const profileFormSchema = z.object({
   email: z.string().email({
     message: 'Пожалуйста, введите корректный email адрес.',
   }),
+  telegramChatId: z.string().optional(),
 })
 
 interface EditProfileDialogProps {
@@ -55,6 +56,7 @@ export function EditProfileDialog({
       firstName: '',
       lastName: '',
       email: '',
+      telegramChatId: '',
     },
   })
 
@@ -64,6 +66,7 @@ export function EditProfileDialog({
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        telegramChatId: user.telegramChatId || '',
       })
     }
   }, [user, isOpen, form])
@@ -73,6 +76,7 @@ export function EditProfileDialog({
       firstName: values.firstName,
       lastName: values.lastName,
       email: values.email,
+      telegramChatId: values.telegramChatId || '',
     }
 
     updateUser(userData, {
@@ -143,6 +147,26 @@ export function EditProfileDialog({
                   </FormControl>
                   <FormDescription>
                     Ваш email используется для входа в систему.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='telegramChatId'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telegram ID</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder='Введите ваш Chat ID из Telegram'
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Ваш Telegram Chat ID для использования бота. Получите его,
+                    отправив команду /start боту.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

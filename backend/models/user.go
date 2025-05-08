@@ -19,25 +19,27 @@ const (
 
 // User модель пользователя
 type User struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	Email     string    `gorm:"uniqueIndex;not null" json:"email"`
-	Password  string    `gorm:"not null" json:"-"`
-	FirstName string    `json:"firstName"`
-	LastName  string    `json:"lastName"`
-	Role      UserRole  `gorm:"type:varchar(10);default:'user'" json:"role"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedUt"`
+	ID             uint      `gorm:"primaryKey" json:"id"`
+	Email          string    `gorm:"uniqueIndex;not null" json:"email"`
+	Password       string    `gorm:"not null" json:"-"`
+	FirstName      string    `json:"firstName"`
+	LastName       string    `json:"lastName"`
+	Role           UserRole  `gorm:"type:varchar(10);default:'user'" json:"role"`
+	TelegramChatID string    `json:"telegramChatId"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedUt"`
 }
 
 // UserResponse структура для ответа без пароля
 type UserResponse struct {
-	ID        uint      `json:"id"`
-	Email     string    `json:"email"`
-	FirstName string    `json:"firstName"`
-	LastName  string    `json:"lastName"`
-	Role      UserRole  `json:"role"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedUt"`
+	ID             uint      `json:"id"`
+	Email          string    `json:"email"`
+	FirstName      string    `json:"firstName"`
+	LastName       string    `json:"lastName"`
+	Role           UserRole  `json:"role"`
+	TelegramChatID string    `json:"telegramChatId"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedUt"`
 }
 
 // RegisterDTO структура для регистрации
@@ -56,9 +58,10 @@ type LoginDTO struct {
 
 // UpdateUserDTO структура для обновления пользователя
 type UpdateUserDTO struct {
-	Email     string `json:"email" validate:"required,email"`
-	FirstName string `json:"firstName" validate:"required"`
-	LastName  string `json:"lastName" validate:"required"`
+	Email          string `json:"email" validate:"required,email"`
+	FirstName      string `json:"firstName" validate:"required"`
+	LastName       string `json:"lastName" validate:"required"`
+	TelegramChatID string `json:"telegramChatId"`
 }
 
 // UpdateRoleDTO структура для обновления роли пользователя
@@ -114,12 +117,13 @@ func (u *User) ComparePassword(password string) error {
 // ToUserResponse конвертирует User в UserResponse
 func (u *User) ToUserResponse() UserResponse {
 	return UserResponse{
-		ID:        u.ID,
-		Email:     u.Email,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Role:      u.Role,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		ID:             u.ID,
+		Email:          u.Email,
+		FirstName:      u.FirstName,
+		LastName:       u.LastName,
+		Role:           u.Role,
+		TelegramChatID: u.TelegramChatID,
+		CreatedAt:      u.CreatedAt,
+		UpdatedAt:      u.UpdatedAt,
 	}
 }

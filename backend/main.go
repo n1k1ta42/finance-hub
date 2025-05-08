@@ -12,6 +12,7 @@ import (
 	"github.com/nikitagorchakov/finance-hub/backend/db"
 	"github.com/nikitagorchakov/finance-hub/backend/middlewares"
 	"github.com/nikitagorchakov/finance-hub/backend/routes"
+	"github.com/nikitagorchakov/finance-hub/backend/telegram"
 )
 
 func main() {
@@ -28,6 +29,9 @@ func main() {
 	if cfg.Env == "development" {
 		db.SeedDefaultData()
 	}
+
+	// Инициализируем и запускаем Telegram-бота
+	initTelegramBot()
 
 	// Инициализируем приложение Fiber
 	app := fiber.New(fiber.Config{
@@ -71,6 +75,19 @@ func main() {
 	if err := app.Listen(port); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
+}
+
+// initTelegramBot инициализирует и запускает клиентский Telegram-бот
+func initTelegramBot() {
+	botService, err := telegram.GetInstance()
+	if err != nil {
+		log.Printf("Ошибка инициализации клиентского Telegram-бота: %v", err)
+		log.Println("Приложение продолжит работу без клиентского Telegram-бота")
+		return
+	}
+	
+	botService.Start()
+	log.Println("Клиентский Telegram бот успешно инициализирован")
 }
 
 // getAllowedOrigins возвращает разрешенные домены в зависимости от окружения

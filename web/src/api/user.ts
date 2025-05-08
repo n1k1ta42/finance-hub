@@ -7,6 +7,7 @@ export interface User {
   firstName: string
   lastName: string
   role: string
+  telegramChatId: string
   createdAt: string
   updatedUt: string
 }
@@ -15,6 +16,7 @@ export interface UpdateUserData {
   firstName: string
   lastName: string
   email: string
+  telegramChatId: string
 }
 
 export interface UpdateRoleData {
