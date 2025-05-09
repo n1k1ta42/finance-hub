@@ -186,7 +186,7 @@ func (tc *TransactionController) CreateTransaction(c *fiber.Ctx) error {
 	// Устанавливаем время на 12:00 дня, сохраняя дату
 	date := input.Date
 	year, month, day := date.Date()
-	normalizedDate := time.Date(year, month, day, 12, 0, 0, 0, time.UTC)
+	normalizedDate := time.Date(year, month, day, 12, 0, 0, 0, date.Location())
 
 	transaction := models.Transaction{
 		Amount:      input.Amount,
@@ -268,7 +268,7 @@ func (tc *TransactionController) UpdateTransaction(c *fiber.Ctx) error {
 	// Устанавливаем время на 12:00 дня, сохраняя дату
 	date := input.Date
 	year, month, day := date.Date()
-	normalizedDate := time.Date(year, month, day, 12, 0, 0, 0, time.UTC)
+	normalizedDate := time.Date(year, month, day, 12, 0, 0, 0, date.Location())
 
 	transaction.Amount = input.Amount
 	transaction.Description = input.Description
@@ -384,7 +384,7 @@ func (tc *TransactionController) CreateBulkTransactions(c *fiber.Ctx) error {
 		// Устанавливаем время на 12:00 дня, сохраняя дату
 		date := t.Date
 		year, month, day := date.Date()
-		normalizedDate := time.Date(year, month, day, 12, 0, 0, 0, time.UTC)
+		normalizedDate := time.Date(year, month, day, 12, 0, 0, 0, date.Location())
 		
 		transaction := models.Transaction{
 			Amount:      t.Amount,

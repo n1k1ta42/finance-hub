@@ -62,27 +62,58 @@ export function TransactionForm({
     defaultValues: {
       amount: transaction?.amount || 0,
       description: transaction?.description || '',
-      date: transaction ? new Date(transaction.date) : new Date(),
+      date: transaction
+        ? new Date(transaction.date)
+        : new Date(
+            new Date().getFullYear(),
+            new Date().getMonth(),
+            new Date().getDate(),
+            12,
+            0,
+            0,
+          ),
       categoryId: transaction?.categoryId || 0,
     },
   })
 
   useEffect(() => {
     if (transaction) {
+      const date = new Date(transaction.date)
+      // Корректируем дату для правильного отображения
+      const correctedDate = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        12,
+        0,
+        0,
+      )
+
       form.reset({
         amount: transaction.amount,
         description: transaction.description,
-        date: new Date(transaction.date),
+        date: correctedDate,
         categoryId: transaction.categoryId,
       })
     }
   }, [transaction, form])
 
   const handleSubmit = (values: z.infer<typeof schema>) => {
+    // Установка времени на 12:00 для предотвращения проблем с часовыми поясами
+    const selectedDate = values.date
+    const correctedDate = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      12,
+      0,
+      0,
+    )
+
     onSubmit({
       amount: values.amount,
       description: values.description || '',
-      date: values.date.toISOString(),
+      date: correctedDate.toISOString(),
       categoryId: values.categoryId,
     })
   }
