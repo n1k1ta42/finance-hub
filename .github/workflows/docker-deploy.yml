@@ -96,7 +96,7 @@ jobs:
           scp -P ${{ secrets.VPS_PORT || 22 }} deploy.sh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/tmp/deploy.sh
 
           # Запуск скрипта деплоя
-          ssh -p ${{ secrets.VPS_PORT || 22 }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash chmod +x /tmp/deploy.sh && /tmp/deploy.sh'
+          ssh -p ${{ secrets.VPS_PORT || 22 }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'bash chmod +x /tmp/deploy.sh && sudo /tmp/deploy.sh'
 
       - name: Cleanup SSH key
         run: rm -f ~/.ssh/id_rsa
