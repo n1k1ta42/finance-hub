@@ -1,5 +1,4 @@
-import type { Category } from '@/api/categories'
-import type { Transaction, TransactionFormData } from '@/api/transactions'
+import type { Transaction } from '@/api/transactions'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,53 +9,51 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 
 import { TransactionForm } from './transaction-form'
 
-interface TransactionDialogProps {
-  isOpen: boolean
-  onClose: () => void
+export interface TransactionDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSubmit: (data: any) => Promise<void>
   transaction?: Transaction
-  categories: Category[]
-  onSubmit: (data: TransactionFormData) => Promise<void>
-  isSubmitting: boolean
+  categories: any[]
+  isCreating?: boolean
+  title?: string
+  description?: string
 }
 
 export function TransactionDialog({
-  isOpen,
-  onClose,
+  open,
+  onOpenChange,
+  onSubmit,
   transaction,
   categories,
-  onSubmit,
-  isSubmitting,
+  isCreating = false,
+  title = 'Создать транзакцию',
+  description = 'Заполните форму ниже, чтобы создать новую транзакцию.',
 }: TransactionDialogProps) {
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className='sm:max-w-[425px]'>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {transaction
-              ? 'Редактировать транзакцию'
-              : 'Создать новую транзакцию'}
-          </DialogTitle>
-          <DialogDescription>
-            {transaction
-              ? 'Измените данные транзакции и нажмите "Обновить"'
-              : 'Заполните форму и нажмите "Создать"'}
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <TransactionForm
+          onSubmit={onSubmit}
           transaction={transaction}
           categories={categories}
-          onSubmit={onSubmit}
-          isSubmitting={isSubmitting}
+          isSubmitting={isCreating}
         />
       </DialogContent>
     </Dialog>
@@ -98,5 +95,52 @@ export function DeleteTransactionDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  )
+}
+
+interface DeleteBulkTransactionsDialogProps {
+  count: number
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: () => void
+  isDeleting?: boolean
+}
+
+export function DeleteBulkTransactionsDialog({
+  count,
+  open,
+  onOpenChange,
+  onConfirm,
+  isDeleting = false,
+}: DeleteBulkTransactionsDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Массовое удаление транзакций</DialogTitle>
+          <DialogDescription>
+            Вы уверены, что хотите удалить {count}{' '}
+            {count === 1
+              ? 'транзакцию'
+              : count > 1 && count < 5
+                ? 'транзакции'
+                : 'транзакций'}
+            ? Это действие нельзя отменить.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant='outline' onClick={() => onOpenChange(false)}>
+            Отмена
+          </Button>
+          <Button
+            variant='destructive'
+            onClick={onConfirm}
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Удаление...' : 'Удалить'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -30,3 +30,8 @@ type TransactionDTO struct {
 type BulkTransactionDTO struct {
 	Transactions []TransactionDTO `json:"transactions" validate:"required,min=1,dive"`
 }
+
+// BulkDeleteDTO структура для массового удаления транзакций
+type BulkDeleteDTO struct {
+	TransactionIDs []uint `json:"transactionIds" validate:"required,min=1"`
+}

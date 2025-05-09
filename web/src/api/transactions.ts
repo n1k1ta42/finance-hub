@@ -162,6 +162,17 @@ const deleteTransaction = async (id: number): Promise<void> => {
   }
 }
 
+const deleteBulkTransactions = async (ids: number[]): Promise<void> => {
+  try {
+    await api.delete('/transactions/bulk', {
+      data: { transactionIds: ids },
+    })
+  } catch (error) {
+    console.error('Ошибка при массовом удалении транзакций:', error)
+    throw error
+  }
+}
+
 // React Query хуки
 
 export interface TransactionsWithMeta {
@@ -233,6 +244,19 @@ export const useDeleteTransaction = () => {
 
   return useMutation({
     mutationFn: deleteTransaction,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['stats'] })
+      queryClient.invalidateQueries({ queryKey: ['budgets'] })
+    },
+  })
+}
+
+export const useDeleteBulkTransactions = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteBulkTransactions,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['stats'] })

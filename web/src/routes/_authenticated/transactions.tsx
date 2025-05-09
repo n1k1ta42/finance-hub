@@ -2,6 +2,7 @@ import { useCategories } from '@/api/categories'
 import {
   useCreateBulkTransactions,
   useCreateTransaction,
+  useDeleteBulkTransactions,
   useDeleteTransaction,
   useExportTransactionsToCSV,
   useExportTransactionsToExcel,
@@ -15,6 +16,7 @@ import {
 import { Layout } from '@/components/layout'
 import { BulkTransactionDialog } from '@/components/transactions/bulk-transaction-dialog'
 import {
+  DeleteBulkTransactionsDialog,
   DeleteTransactionDialog,
   TransactionDialog,
 } from '@/components/transactions/transaction-dialog'
@@ -40,7 +42,7 @@ import {
 import { useToast } from '@/components/ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { ChevronDown, PlusCircle, RefreshCcw } from 'lucide-react'
+import { ChevronDown, PlusCircle, RefreshCcw, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/_authenticated/transactions')({
@@ -63,9 +65,15 @@ function TransactionsPage() {
   const [createBulkDialogOpen, setCreateBulkDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteBulkDialogOpen, setDeleteBulkDialogOpen] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<
     Transaction | undefined
   >()
+
+  // Выбор транзакций
+  const [selectedTransactionIds, setSelectedTransactionIds] = useState<
+    number[]
+  >([])
 
   // Запросы
   const {
@@ -88,8 +96,28 @@ function TransactionsPage() {
   const createBulkTransactions = useCreateBulkTransactions()
   const updateTransaction = useUpdateTransaction()
   const deleteTransaction = useDeleteTransaction()
+  const deleteBulkTransactions = useDeleteBulkTransactions()
   const exportToCSV = useExportTransactionsToCSV()
   const exportToExcel = useExportTransactionsToExcel()
+
+  // Обработчики выбора транзакций
+  const handleSelectTransaction = (id: number, selected: boolean) => {
+    if (selected) {
+      setSelectedTransactionIds(prev => [...prev, id])
+    } else {
+      setSelectedTransactionIds(prev =>
+        prev.filter(transactionId => transactionId !== id),
+      )
+    }
+  }
+
+  const handleSelectAllTransactions = (selected: boolean) => {
+    if (selected) {
+      setSelectedTransactionIds(transactions.map(t => t.id))
+    } else {
+      setSelectedTransactionIds([])
+    }
+  }
 
   // Обработчики
   const handleCreateTransaction = async (data: TransactionFormData) => {
@@ -161,6 +189,29 @@ function TransactionsPage() {
     })
   }
 
+  const handleDeleteBulkTransactions = async () => {
+    if (selectedTransactionIds.length === 0) return
+
+    deleteBulkTransactions.mutate(selectedTransactionIds, {
+      onSuccess: () => {
+        setDeleteBulkDialogOpen(false)
+        setSelectedTransactionIds([])
+        toast({
+          title: 'Успех!',
+          description: `Успешно удалено ${selectedTransactionIds.length} транзакций`,
+        })
+      },
+      onError: error => {
+        toast({
+          title: 'Ошибка!',
+          description: 'Не удалось удалить транзакции',
+          variant: 'destructive',
+        })
+        console.error(error)
+      },
+    })
+  }
+
   const handleEditClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction)
     setEditDialogOpen(true)
@@ -208,42 +259,32 @@ function TransactionsPage() {
 
   const handlePerPageChange = (newPerPage: number) => {
     setPerPage(newPerPage)
-    setCurrentPage(1) // Сбрасываем страницу при изменении количества элементов
-    setFilters(prev => ({ ...prev, perPage: newPerPage, page: 1 }))
+    setCurrentPage(1)
+    setFilters(prev => ({ ...prev, page: 1, perPage: newPerPage }))
   }
 
   const handleFiltersChange = (newFilters: Filters) => {
-    setCurrentPage(1) // Сбрасываем страницу при изменении фильтров
+    setCurrentPage(1)
     setFilters(prev => ({ ...prev, ...newFilters, page: 1 }))
   }
 
   const handleResetFilters = () => {
-    // Сбрасываем все фильтры, кроме параметров пагинации
-    setFilters({ page: 1, perPage })
+    setFilters({
+      page: 1,
+      perPage,
+    })
     setCurrentPage(1)
   }
 
   const handleResetFilter = (filterName: keyof Filters) => {
     setFilters(prev => {
       const newFilters = { ...prev }
-
-      // Удаляем указанный фильтр
-      if (filterName === 'startDate' || filterName === 'endDate') {
-        // Для фильтра дат сбрасываем оба параметра вместе
-        delete newFilters.startDate
-        delete newFilters.endDate
-      } else {
-        delete newFilters[filterName]
-      }
-
-      // Сбрасываем страницу на первую
-      newFilters.page = 1
-
+      delete newFilters[filterName]
       return newFilters
     })
-    setCurrentPage(1)
   }
 
+  // Создаем навигацию страниц
   const getPaginationItems = () => {
     const items = []
     const totalPages = paginationMeta?.total_pages || 1
@@ -335,6 +376,15 @@ function TransactionsPage() {
         <div className='flex flex-col items-center justify-between gap-2 sm:flex-row'>
           <h1 className='text-3xl font-bold'>Транзакции</h1>
           <div className='flex gap-2'>
+            {selectedTransactionIds.length > 0 && (
+              <Button
+                variant='destructive'
+                onClick={() => setDeleteBulkDialogOpen(true)}
+              >
+                <Trash2 className='mr-2 h-4 w-4' />
+                Удалить выбранные ({selectedTransactionIds.length})
+              </Button>
+            )}
             <Button
               variant='outline'
               size='sm'
@@ -401,6 +451,9 @@ function TransactionsPage() {
               data={transactions}
               onEdit={handleEditClick}
               onDelete={handleDeleteClick}
+              selectedIds={selectedTransactionIds}
+              onSelect={handleSelectTransaction}
+              onSelectAll={handleSelectAllTransactions}
             />
             <div className='flex items-center justify-between'>
               <div className='text-muted-foreground min-w-max text-sm'>
@@ -457,11 +510,11 @@ function TransactionsPage() {
       {isCategoriesSuccess && (
         <>
           <TransactionDialog
-            isOpen={createDialogOpen}
-            onClose={() => setCreateDialogOpen(false)}
-            categories={categories}
+            open={createDialogOpen}
+            onOpenChange={setCreateDialogOpen}
             onSubmit={handleCreateTransaction}
-            isSubmitting={createTransaction.isPending}
+            categories={categories}
+            isCreating={createTransaction.isPending}
           />
 
           <BulkTransactionDialog
@@ -472,29 +525,37 @@ function TransactionsPage() {
             isSubmitting={createBulkTransactions.isPending}
           />
 
-          <TransactionDialog
-            isOpen={editDialogOpen}
-            onClose={() => {
-              setEditDialogOpen(false)
-              setSelectedTransaction(undefined)
-            }}
-            transaction={selectedTransaction}
-            categories={categories}
-            onSubmit={handleUpdateTransaction}
-            isSubmitting={updateTransaction.isPending}
-          />
+          {selectedTransaction && (
+            <TransactionDialog
+              open={editDialogOpen}
+              onOpenChange={setEditDialogOpen}
+              onSubmit={handleUpdateTransaction}
+              transaction={selectedTransaction}
+              categories={categories}
+              isCreating={updateTransaction.isPending}
+              title='Редактировать транзакцию'
+              description='Измените данные транзакции и нажмите "Сохранить"'
+            />
+          )}
         </>
       )}
 
-      <DeleteTransactionDialog
-        isOpen={deleteDialogOpen}
-        onClose={() => {
-          setDeleteDialogOpen(false)
-          setSelectedTransaction(undefined)
-        }}
-        transaction={selectedTransaction}
-        onConfirm={handleDeleteTransaction}
-        isDeleting={deleteTransaction.isPending}
+      {selectedTransaction && (
+        <DeleteTransactionDialog
+          isOpen={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          transaction={selectedTransaction}
+          onConfirm={handleDeleteTransaction}
+          isDeleting={deleteTransaction.isPending}
+        />
+      )}
+
+      <DeleteBulkTransactionsDialog
+        count={selectedTransactionIds.length}
+        open={deleteBulkDialogOpen}
+        onOpenChange={setDeleteBulkDialogOpen}
+        onConfirm={handleDeleteBulkTransactions}
+        isDeleting={deleteBulkTransactions.isPending}
       />
     </Layout>
   )

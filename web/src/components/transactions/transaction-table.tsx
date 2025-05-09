@@ -1,6 +1,7 @@
 import type { Transaction } from '@/api/transactions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -27,17 +28,52 @@ interface TransactionTableProps {
   data: Transaction[]
   onEdit: (transaction: Transaction) => void
   onDelete: (transaction: Transaction) => void
+  selectedIds?: number[]
+  onSelect?: (id: number, selected: boolean) => void
+  onSelectAll?: (selected: boolean) => void
 }
 
 export function TransactionTable({
   data,
   onEdit,
   onDelete,
+  selectedIds = [],
+  onSelect,
+  onSelectAll,
 }: TransactionTableProps) {
+  const hasSelectionEnabled = !!onSelect && !!onSelectAll
+
   const columnHelper = createColumnHelper<Transaction>()
 
   const columns = useMemo(
     () => [
+      ...(hasSelectionEnabled
+        ? [
+            columnHelper.display({
+              id: 'select',
+              header: () => (
+                <Checkbox
+                  checked={
+                    data.length > 0 && selectedIds.length === data.length
+                  }
+                  onCheckedChange={checked => {
+                    onSelectAll?.(!!checked)
+                  }}
+                  aria-label='Выбрать все транзакции'
+                />
+              ),
+              cell: info => (
+                <Checkbox
+                  checked={selectedIds.includes(info.row.original.id)}
+                  onCheckedChange={checked => {
+                    onSelect?.(info.row.original.id, !!checked)
+                  }}
+                  aria-label={`Выбрать транзакцию ${info.row.original.id}`}
+                />
+              ),
+            }),
+          ]
+        : []),
       columnHelper.accessor('date', {
         header: 'Дата',
         cell: info => formatDate(info.getValue()),
@@ -95,7 +131,16 @@ export function TransactionTable({
         ),
       }),
     ],
-    [columnHelper, onEdit, onDelete],
+    [
+      columnHelper,
+      onEdit,
+      onDelete,
+      hasSelectionEnabled,
+      selectedIds,
+      onSelect,
+      onSelectAll,
+      data.length,
+    ],
   )
 
   const table = useReactTable({
@@ -119,7 +164,11 @@ export function TransactionTable({
                       ? 'cursor-pointer select-none'
                       : ''
                   }
-                  onClick={header.column.getToggleSortingHandler()}
+                  onClick={
+                    header.column.id !== 'select'
+                      ? header.column.getToggleSortingHandler()
+                      : undefined
+                  }
                 >
                   <div className='flex items-center gap-1'>
                     {flexRender(

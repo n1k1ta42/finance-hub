@@ -109,6 +109,7 @@ func SetupRoutes(app *fiber.App, config *config.Config) {
 	transactions.Post("/", transactionController.CreateTransaction)
 	transactions.Post("/bulk", transactionController.CreateBulkTransactions)
 	transactions.Put("/:id", transactionController.UpdateTransaction)
+	transactions.Delete("/bulk", transactionController.DeleteBulkTransactions)
 	transactions.Delete("/:id", transactionController.DeleteTransaction)
 
 	// Экспорт транзакций (доступен только для Pro)

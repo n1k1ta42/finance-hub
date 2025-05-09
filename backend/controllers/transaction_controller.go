@@ -340,6 +340,101 @@ func (tc *TransactionController) DeleteTransaction(c *fiber.Ctx) error {
 	})
 }
 
+// DeleteBulkTransactions удаляет несколько транзакций одним запросом
+func (tc *TransactionController) DeleteBulkTransactions(c *fiber.Ctx) error {
+	var input models.BulkDeleteDTO
+	userID := middlewares.GetUserID(c)
+
+	if err := c.BodyParser(&input); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Не удалось обработать данные",
+			"error":   err.Error(),
+		})
+	}
+
+	errors := utils.ValidateStruct(input)
+	if len(errors) > 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"status": "error",
+			"errors": errors,
+		})
+	}
+
+	// Находим все транзакции для удаления и проверяем, что они принадлежат пользователю
+	var transactions []models.Transaction
+	if err := db.DB.Where("id IN ? AND user_id = ?", input.TransactionIDs, userID).Find(&transactions).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Не удалось найти транзакции",
+			"error":   err.Error(),
+		})
+	}
+
+	// Проверяем, что мы нашли все запрошенные транзакции
+	if len(transactions) != len(input.TransactionIDs) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Некоторые транзакции не найдены или не принадлежат пользователю",
+		})
+	}
+
+	// Сохраняем данные для обновления бюджетов
+	type transactionMeta struct {
+		categoryID uint
+		date       time.Time
+	}
+	transactionsMeta := make([]transactionMeta, len(transactions))
+	for i, t := range transactions {
+		transactionsMeta[i] = transactionMeta{
+			categoryID: t.CategoryID,
+			date:       t.Date,
+		}
+	}
+
+	// Выполняем транзакцию в базе данных
+	tx := db.DB.Begin()
+	if tx.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Не удалось начать транзакцию в базе данных",
+			"error":   tx.Error.Error(),
+		})
+	}
+
+	// Удаляем транзакции
+	if err := tx.Where("id IN ? AND user_id = ?", input.TransactionIDs, userID).Delete(&models.Transaction{}).Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Не удалось удалить транзакции",
+			"error":   err.Error(),
+		})
+	}
+
+	// Подтверждаем транзакцию
+	if err := tx.Commit().Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Не удалось завершить транзакцию в базе данных",
+			"error":   err.Error(),
+		})
+	}
+
+	// Обновляем бюджеты для каждой удаленной транзакции
+	for _, meta := range transactionsMeta {
+		if err := tc.updateBudgetSpent(meta.categoryID, meta.date, userID); err != nil {
+			// Логируем ошибку, но продолжаем выполнение
+			logError(err, fmt.Sprintf("Ошибка при обновлении бюджета для категории %d", meta.categoryID))
+		}
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status":  "success",
+		"message": fmt.Sprintf("Успешно удалено %d транзакций", len(transactions)),
+	})
+}
+
 // CreateBulkTransactions создает несколько транзакций одним запросом
 func (tc *TransactionController) CreateBulkTransactions(c *fiber.Ctx) error {
 	var input models.BulkTransactionDTO
