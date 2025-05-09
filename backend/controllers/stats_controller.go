@@ -20,6 +20,55 @@ func NewStatsController() *StatsController {
 	return &StatsController{}
 }
 
+// parseDateParam обрабатывает параметр даты из запроса
+// isStart: true для даты начала, false для даты конца
+func parseDateParam(dateStr string, isStart bool) time.Time {
+	var result time.Time
+	
+	if dateStr != "" {
+		// Пробуем сначала формат ISO 8601 (YYYY-MM-DD)
+		date, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			// Пробуем формат RFC3339 как запасной вариант
+			date, err = time.Parse(time.RFC3339, dateStr)
+			if err != nil {
+				// Если неверный формат, берем текущую дату или начало месяца
+				now := time.Now()
+				if isStart {
+					// Для даты начала берем начало текущего месяца
+					result = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+				} else {
+					// Для даты конца берем текущую дату (конец дня)
+					result = time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
+				}
+				return result
+			}
+			result = date
+		} else {
+			// Установим правильное время
+			if isStart {
+				// Для даты начала устанавливаем начало дня (00:00:00)
+				result = time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+			} else {
+				// Для даты конца устанавливаем конец дня (23:59:59)
+				result = time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 999999999, date.Location())
+			}
+		}
+	} else {
+		// Если дата не указана
+		now := time.Now()
+		if isStart {
+			// Для даты начала берем начало текущего месяца
+			result = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+		} else {
+			// Для даты конца берем текущую дату (конец дня)
+			result = time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
+		}
+	}
+	
+	return result
+}
+
 // CategoryStats структура для хранения статистики по категориям
 type CategoryStats struct {
 	CategoryID   uint    `json:"categoryId"`
@@ -50,33 +99,9 @@ func (sc *StatsController) GetCategorySummary(c *fiber.Ctx) error {
 	startDateStr := c.Query("start_date")
 	endDateStr := c.Query("end_date")
 
-	var startDate, endDate time.Time
-	var err error
-
-	// Настраиваем временной период
-	if startDateStr != "" {
-		startDate, err = time.Parse(time.RFC3339, startDateStr)
-		if err != nil {
-			// Если дата начала не указана или неверный формат, берем начало текущего месяца
-			now := time.Now()
-			startDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-		}
-	} else {
-		// Если дата начала не указана, берем начало текущего месяца
-		now := time.Now()
-		startDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	}
-
-	if endDateStr != "" {
-		endDate, err = time.Parse(time.RFC3339, endDateStr)
-		if err != nil {
-			// Если дата конца не указана или неверный формат, берем текущую дату
-			endDate = time.Now()
-		}
-	} else {
-		// Если дата конца не указана, берем текущую дату
-		endDate = time.Now()
-	}
+	// Парсим даты с помощью вспомогательной функции
+	startDate := parseDateParam(startDateStr, true)
+	endDate := parseDateParam(endDateStr, false)
 
 	// Получаем все категории пользователя с указанным типом
 	var categories []models.Category
@@ -155,33 +180,9 @@ func (sc *StatsController) GetBalanceSummary(c *fiber.Ctx) error {
 	startDateStr := c.Query("start_date")
 	endDateStr := c.Query("end_date")
 
-	var startDate, endDate time.Time
-	var err error
-
-	// Настраиваем временной период
-	if startDateStr != "" {
-		startDate, err = time.Parse(time.RFC3339, startDateStr)
-		if err != nil {
-			// Если дата начала не указана или неверный формат, берем начало текущего месяца
-			now := time.Now()
-			startDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-		}
-	} else {
-		// Если дата начала не указана, берем начало текущего месяца
-		now := time.Now()
-		startDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	}
-
-	if endDateStr != "" {
-		endDate, err = time.Parse(time.RFC3339, endDateStr)
-		if err != nil {
-			// Если дата конца не указана или неверный формат, берем текущую дату
-			endDate = time.Now()
-		}
-	} else {
-		// Если дата конца не указана, берем текущую дату
-		endDate = time.Now()
-	}
+	// Парсим даты с помощью вспомогательной функции
+	startDate := parseDateParam(startDateStr, true)
+	endDate := parseDateParam(endDateStr, false)
 
 	// Получаем сумму доходов
 	var totalIncome float64
@@ -294,33 +295,9 @@ func (sc *StatsController) ExportStatsToPDF(c *fiber.Ctx) error {
 	startDateStr := c.Query("start_date")
 	endDateStr := c.Query("end_date")
 
-	var startDate, endDate time.Time
-	var err error
-
-	// Настраиваем временной период
-	if startDateStr != "" {
-		startDate, err = time.Parse(time.RFC3339, startDateStr)
-		if err != nil {
-			// Если дата начала не указана или неверный формат, берем начало текущего месяца
-			now := time.Now()
-			startDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-		}
-	} else {
-		// Если дата начала не указана, берем начало текущего месяца
-		now := time.Now()
-		startDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	}
-
-	if endDateStr != "" {
-		endDate, err = time.Parse(time.RFC3339, endDateStr)
-		if err != nil {
-			// Если дата конца не указана или неверный формат, берем текущую дату
-			endDate = time.Now()
-		}
-	} else {
-		// Если дата конца не указана, берем текущую дату
-		endDate = time.Now()
-	}
+	// Парсим даты с помощью вспомогательной функции
+	startDate := parseDateParam(startDateStr, true)
+	endDate := parseDateParam(endDateStr, false)
 
 	// Получаем данные о балансе
 	var totalIncome float64
@@ -471,33 +448,9 @@ func (sc *StatsController) GetBalanceDynamics(c *fiber.Ctx) error {
 	startDateStr := c.Query("start_date")
 	endDateStr := c.Query("end_date")
 
-	var startDate, endDate time.Time
-	var err error
-
-	// Настраиваем временной период
-	if startDateStr != "" {
-		startDate, err = time.Parse(time.RFC3339, startDateStr)
-		if err != nil {
-			// Если дата начала не указана или неверный формат, берем начало текущего месяца
-			now := time.Now()
-			startDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-		}
-	} else {
-		// Если дата начала не указана, берем начало текущего месяца
-		now := time.Now()
-		startDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	}
-
-	if endDateStr != "" {
-		endDate, err = time.Parse(time.RFC3339, endDateStr)
-		if err != nil {
-			// Если дата конца не указана или неверный формат, берем текущую дату
-			endDate = time.Now()
-		}
-	} else {
-		// Если дата конца не указана, берем текущую дату
-		endDate = time.Now()
-	}
+	// Парсим даты с помощью вспомогательной функции
+	startDate := parseDateParam(startDateStr, true)
+	endDate := parseDateParam(endDateStr, false)
 
 	// Определяем интервал группировки в зависимости от длительности периода
 	daysDiff := int(endDate.Sub(startDate).Hours() / 24)

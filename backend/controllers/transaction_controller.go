@@ -182,11 +182,16 @@ func (tc *TransactionController) CreateTransaction(c *fiber.Ctx) error {
 			"error":   err.Error(),
 		})
 	}
+	
+	// Устанавливаем время на 12:00 дня, сохраняя дату
+	date := input.Date
+	year, month, day := date.Date()
+	normalizedDate := time.Date(year, month, day, 12, 0, 0, 0, time.UTC)
 
 	transaction := models.Transaction{
 		Amount:      input.Amount,
 		Description: input.Description,
-		Date:        input.Date,
+		Date:        normalizedDate,
 		CategoryID:  input.CategoryID,
 		UserID:      userID,
 	}
@@ -259,10 +264,15 @@ func (tc *TransactionController) UpdateTransaction(c *fiber.Ctx) error {
 			"error":   err.Error(),
 		})
 	}
+	
+	// Устанавливаем время на 12:00 дня, сохраняя дату
+	date := input.Date
+	year, month, day := date.Date()
+	normalizedDate := time.Date(year, month, day, 12, 0, 0, 0, time.UTC)
 
 	transaction.Amount = input.Amount
 	transaction.Description = input.Description
-	transaction.Date = input.Date
+	transaction.Date = normalizedDate
 	transaction.CategoryID = input.CategoryID
 
 	if err := db.DB.Save(&transaction).Error; err != nil {
@@ -371,10 +381,15 @@ func (tc *TransactionController) CreateBulkTransactions(c *fiber.Ctx) error {
 	// Создаем транзакции
 	transactions := make([]models.Transaction, 0, len(input.Transactions))
 	for _, t := range input.Transactions {
+		// Устанавливаем время на 12:00 дня, сохраняя дату
+		date := t.Date
+		year, month, day := date.Date()
+		normalizedDate := time.Date(year, month, day, 12, 0, 0, 0, time.UTC)
+		
 		transaction := models.Transaction{
 			Amount:      t.Amount,
 			Description: t.Description,
-			Date:        t.Date,
+			Date:        normalizedDate,
 			CategoryID:  t.CategoryID,
 			UserID:      userID,
 		}

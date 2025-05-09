@@ -505,10 +505,14 @@ func (b *Bot) sendConfirmKeyboard(chatID int64, text string) {
 
 // createTransaction создает новую транзакцию
 func (b *Bot) createTransaction(chatID int64, state *UserState) error {
+	// Устанавливаем время на 12:00 текущего дня
+	now := time.Now()
+	date := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, time.UTC)
+
 	transaction := models.Transaction{
 		Amount:      state.Amount,
 		Description: state.Description,
-		Date:        time.Now(),
+		Date:        date,
 		CategoryID:  state.CategoryID,
 		UserID:      state.UserID,
 	}
