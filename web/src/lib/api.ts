@@ -24,36 +24,46 @@ api.interceptors.request.use(
   },
 )
 
+let isRefreshing = false
+let refreshPromise: Promise<void> | null = null
+
 // Обработка ошибок 401 (Unauthorized)
 api.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config
 
-    // Если ошибка 401 и запрос не был попыткой обновления токена
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 
-      try {
-        // Пытаемся обновить токен
-        await axios.post(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/refresh-token`,
-          {},
-          { withCredentials: true },
-        )
+      if (!isRefreshing) {
+        isRefreshing = true
+        refreshPromise = axios
+          .post(
+            `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'}/auth/refresh-token`,
+            {},
+            { withCredentials: true },
+          )
+          .then(() => {
+            isRefreshing = false
+            refreshPromise = null
+          })
+          .catch(err => {
+            isRefreshing = false
+            refreshPromise = null
+            throw err
+          })
+      }
 
-        // Если успешно, повторяем оригинальный запрос
+      try {
+        await refreshPromise
         return api(originalRequest)
       } catch (refreshError) {
-        // Если не удалось обновить токен, очищаем localStorage и перенаправляем на страницу входа
         localStorage.removeItem('token')
         localStorage.removeItem('isAuthenticated')
-
-        // Если это клиентское приложение, перенаправляем на страницу входа
         if (window) {
           window.location.href = '/login'
         }
-
         return Promise.reject(refreshError)
       }
     }
