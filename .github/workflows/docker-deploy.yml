@@ -58,13 +58,13 @@ jobs:
           cd /var/www/finance-hub
 
           # Скачать новые образы
-          docker compose pull
+          sudo docker compose pull
 
           # Перезапустить сервисы
-          docker compose up -d
+          sudo docker compose up -d
 
           # Удалить неиспользуемые образы для экономии места
-          docker image prune -f
+          sudo docker image prune -f
 
           echo "Деплой успешно завершен!"
           EOL
