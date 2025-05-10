@@ -36,7 +36,10 @@ export function Footer() {
   ]
 
   return (
-    <footer className='bg-gray-100 py-12 dark:bg-gray-900'>
+    <footer
+      className='bg-gray-100 py-12 dark:bg-gray-900'
+      aria-label='Нижняя часть сайта'
+    >
       <div className='container mx-auto px-4'>
         <div className='mb-10 grid gap-10 md:grid-cols-2 lg:grid-cols-5'>
           <div className='lg:col-span-2'>
@@ -49,12 +52,13 @@ export function Footer() {
               <h3 className='mb-2 font-semibold'>Связаться с нами:</h3>
               <div className='space-y-2 text-gray-600 dark:text-gray-300'>
                 <div className='flex items-center'>
-                  <MessageCircle className='mr-2 h-4 w-4' />
+                  <MessageCircle className='mr-2 h-4 w-4' aria-hidden='true' />
                   <a
                     href={`https://t.me/${telegram.replace('@', '')}`}
                     target='_blank'
                     rel='noopener noreferrer'
                     className='hover:text-blue-600 dark:hover:text-blue-400'
+                    aria-label='Связаться через Telegram'
                   >
                     Telegram: {telegram}
                   </a>
@@ -68,18 +72,20 @@ export function Footer() {
               <h3 className='mb-4 text-sm font-semibold tracking-wider text-gray-900 uppercase dark:text-gray-100'>
                 {group.title}
               </h3>
-              <ul className='space-y-2'>
-                {group.links.map((link, j) => (
-                  <li key={j}>
-                    <a
-                      href={link.href}
-                      className='text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400'
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              <nav aria-label={group.title}>
+                <ul className='space-y-2'>
+                  {group.links.map((link, j) => (
+                    <li key={j}>
+                      <a
+                        href={link.href}
+                        className='text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400'
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
             </div>
           ))}
         </div>

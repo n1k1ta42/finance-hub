@@ -41,27 +41,33 @@ export function AdvantagesSection() {
   ]
 
   return (
-    <section className='bg-white px-4 py-24 dark:bg-gray-800'>
+    <section
+      className='bg-white px-4 py-24 dark:bg-gray-800'
+      id='advantages'
+      aria-label='Преимущества сервиса'
+    >
       <div className='container mx-auto'>
-        <div className='mx-auto mb-16 max-w-3xl text-center'>
+        <header className='mx-auto mb-16 max-w-3xl text-center'>
           <h2 className='mb-4 text-4xl font-bold'>Почему выбирают нас</h2>
           <p className='text-xl text-gray-600 dark:text-gray-300'>
             Преимущества, которые делают наш сервис особенным
           </p>
-        </div>
+        </header>
 
         <div className='grid gap-6 sm:grid-cols-2 lg:grid-cols-3'>
           {advantages.map((item, index) => (
-            <div
+            <article
               key={index}
               className='flex flex-col rounded-lg border border-gray-200 p-6 transition-all hover:border-blue-200 hover:shadow-md dark:border-gray-700 dark:hover:border-blue-800'
             >
-              <div className='mb-4'>{item.icon}</div>
+              <div className='mb-4' aria-hidden='true'>
+                {item.icon}
+              </div>
               <h3 className='mb-2 text-xl font-medium'>{item.title}</h3>
               <p className='text-gray-600 dark:text-gray-300'>
                 {item.description}
               </p>
-            </div>
+            </article>
           ))}
         </div>
       </div>

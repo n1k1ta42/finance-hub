@@ -342,7 +342,7 @@ yarn e2e
 
 - **Автор**: Никита Горчаков
 - **Email**: nikitagor456@yandex.ru
-- **Telegram**: [@n1k1ta42](https://t.me/nikita_gorchakov)
+- **Telegram**: [@n1k1ta42](https://t.me/n1k1ta42)
 
 ---
 

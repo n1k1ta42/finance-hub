@@ -1,13 +1,10 @@
 import { useFeatures } from '@/api/public'
 import {
   BarChart3,
-  Calculator,
-  Calendar,
   CreditCard,
   ListTodo,
   PieChart,
   Receipt,
-  Target,
   Wallet,
 } from 'lucide-react'
 
@@ -19,13 +16,16 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon, title, description }: FeatureCardProps) {
   return (
-    <div className='dark:hover:bg-gray-750 flex flex-col items-start rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg dark:bg-gray-800'>
-      <div className='mb-4 rounded-full bg-blue-100 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'>
+    <article className='dark:hover:bg-gray-750 flex flex-col items-start rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg dark:bg-gray-800'>
+      <div
+        className='mb-4 rounded-full bg-blue-100 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+        aria-hidden='true'
+      >
         {icon}
       </div>
       <h3 className='mb-2 text-xl font-semibold'>{title}</h3>
       <p className='text-gray-600 dark:text-gray-300'>{description}</p>
-    </div>
+    </article>
   )
 }
 
@@ -94,18 +94,22 @@ export function FeaturesSection() {
     <section
       id='features'
       className='bg-gray-50 px-4 py-24 dark:bg-gray-900/50'
+      aria-label='Основные функции'
     >
       <div className='container mx-auto'>
-        <div className='mx-auto mb-16 max-w-3xl text-center'>
+        <header className='mx-auto mb-16 max-w-3xl text-center'>
           <h2 className='mb-4 text-4xl font-bold'>Основные функции</h2>
           <p className='text-xl text-gray-600 dark:text-gray-300'>
             Все необходимые инструменты для эффективного управления личными
             финансами
           </p>
-        </div>
+        </header>
         {isLoading ? (
           <div className='flex justify-center py-12'>
-            <div className='h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent'></div>
+            <div
+              className='h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent'
+              aria-label='Загрузка...'
+            ></div>
           </div>
         ) : (
           <div className='grid gap-8 md:grid-cols-2 lg:grid-cols-3'>

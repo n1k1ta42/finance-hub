@@ -1,2 +1,14 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /reset-password
+Disallow: /forgot-password
+
+# Обеспечение быстрой индексации страниц
+Crawl-delay: 10
+
+# Путь к карте сайта
+Sitemap: https://finance-hub.ru/sitemap.xml

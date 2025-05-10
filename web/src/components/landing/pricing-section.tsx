@@ -56,16 +56,20 @@ export function PricingSection() {
       <section
         id='pricing'
         className='bg-gray-50 px-4 py-24 dark:bg-gray-900/50'
+        aria-label='Планы подписок'
       >
         <div className='container mx-auto'>
-          <div className='mx-auto mb-16 max-w-3xl text-center'>
+          <header className='mx-auto mb-16 max-w-3xl text-center'>
             <h2 className='mb-4 text-4xl font-bold'>Планы подписок</h2>
             <p className='text-xl text-gray-600 dark:text-gray-300'>
               Выберите план, который подходит вашим потребностям
             </p>
-          </div>
+          </header>
           <div className='flex justify-center'>
-            <div className='h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent'></div>
+            <div
+              className='h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent'
+              aria-label='Загрузка данных о подписках...'
+            ></div>
           </div>
         </div>
       </section>
@@ -77,28 +81,33 @@ export function PricingSection() {
       <section
         id='pricing'
         className='bg-gray-50 px-4 py-24 dark:bg-gray-900/50'
+        aria-label='Планы подписок'
       >
         <div className='container mx-auto'>
-          <div className='mx-auto mb-16 max-w-3xl text-center'>
+          <header className='mx-auto mb-16 max-w-3xl text-center'>
             <h2 className='mb-4 text-4xl font-bold'>Планы подписок</h2>
             <p className='text-xl text-red-600 dark:text-red-400'>
               Не удалось загрузить информацию о подписках
             </p>
-          </div>
+          </header>
         </div>
       </section>
     )
   }
 
   return (
-    <section id='pricing' className='bg-gray-50 px-4 py-24 dark:bg-gray-900/50'>
+    <section
+      id='pricing'
+      className='bg-gray-50 px-4 py-24 dark:bg-gray-900/50'
+      aria-label='Планы подписок'
+    >
       <div className='container mx-auto'>
-        <div className='mx-auto mb-16 max-w-3xl text-center'>
+        <header className='mx-auto mb-16 max-w-3xl text-center'>
           <h2 className='mb-4 text-4xl font-bold'>Планы подписок</h2>
           <p className='text-xl text-gray-600 dark:text-gray-300'>
             Выберите план, который подходит вашим потребностям
           </p>
-        </div>
+        </header>
 
         <Tabs defaultValue='monthly' className='mb-12'>
           <div className='flex justify-center'>
