@@ -99,11 +99,21 @@ export function BulkTransactionForm({
   }, [fields.length])
 
   const handleSubmit = (values: z.infer<typeof schema>) => {
-    // Преобразуем данные в формат, ожидаемый API
+    // Формируем дату с временем 12:00:00 локально, чтобы избежать смещения по таймзоне
+    const selectedDate = values.date
+    const dateAtNoon = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      12,
+      0,
+      0,
+      0,
+    )
     const formattedTransactions = values.transactions.map(transaction => ({
       ...transaction,
       description: transaction.description || '',
-      date: values.date.toISOString(),
+      date: dateAtNoon.toISOString(),
     }))
 
     onSubmit({
