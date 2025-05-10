@@ -514,12 +514,12 @@ function SupportPage() {
               <p>
                 <strong>Telegram:</strong>{' '}
                 <a
-                  href='https://t.me/n1k1ta42'
+                  href='https://t.me/financehub_app'
                   target='_blank'
                   rel='noopener noreferrer'
                   className='text-primary hover:underline'
                 >
-                  @n1k1ta42
+                  @financehub_app
                 </a>
               </p>
               {/*<p>*/}

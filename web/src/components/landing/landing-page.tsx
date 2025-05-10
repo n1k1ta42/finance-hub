@@ -22,7 +22,7 @@ export function LandingPage() {
     tagline:
       'Наш сервис помогает контролировать расходы, планировать бюджет и достигать ваших финансовых целей',
     contacts: {
-      telegram: '@n1k1ta42',
+      telegram: '@financehub_app',
     },
   }
 

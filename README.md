@@ -21,7 +21,7 @@
 - **Телеграм-канал**: [https://t.me/financehub_app](https://t.me/finance_hub_app)
 - **Чат пользователей**: [@financehub_app_chat](https://t.me/financehub_app_chat)
 - **Telegram-бот**: [@Finance_hub_app_bot](https://t.me/Finance_hub_app_bot)
-- **Автор**: [@n1k1ta42](https://t.me/nikita_gorchakov)
+- **Автор**: [@financehub_app](https://t.me/financehub_app)
 
 ## 📋 О проекте
 
@@ -342,7 +342,7 @@ yarn e2e
 
 - **Автор**: Никита Горчаков
 - **Email**: nikitagor456@yandex.ru
-- **Telegram**: [@n1k1ta42](https://t.me/n1k1ta42)
+- **Telegram**: [@financehub_app](https://t.me/financehub_app)
 
 ---
 

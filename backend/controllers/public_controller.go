@@ -117,7 +117,7 @@ func (c *PublicController) GetAppInfo(ctx *fiber.Ctx) error {
 		"description": "Управляйте финансами просто и эффективно",
 		"tagline":     "Наш сервис помогает контролировать расходы, планировать бюджет и достигать ваших финансовых целей",
 		"contacts": map[string]string{
-			"telegram": "@n1k1ta42",
+			"telegram": "@financehub_app",
 		},
 	})
 } 

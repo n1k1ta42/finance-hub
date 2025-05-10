@@ -6,7 +6,7 @@ export function Footer() {
   const { data: appInfo } = useAppInfo()
 
   // Используем telegram из данных API или значение по умолчанию
-  const telegram = appInfo?.contacts?.telegram || '@n1k1ta42'
+  const telegram = appInfo?.contacts?.telegram || '@financehub_app'
 
   const footerLinks = [
     {
