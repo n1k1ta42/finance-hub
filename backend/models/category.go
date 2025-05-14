@@ -25,11 +25,11 @@ var DefaultCategoryColors = map[string]string{
 
 // DefaultCategoryIcons иконки по умолчанию для базовых категорий
 var DefaultCategoryIcons = map[string]string{
-	"food":       "utensils",
-	"transport":  "car",
-	"home":       "home",
-	"salary":     "briefcase",
-	"investment": "trending-up",
+	"food":       "🍽️",
+	"transport":  "🚗",
+	"home":       "🏠",
+	"salary":     "💼",
+	"investment": "📈",
 }
 
 // DefaultCategories список базовых категорий для нового пользователя
