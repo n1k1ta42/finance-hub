@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -87,6 +88,13 @@ func (a *AuthController) Register(c *fiber.Ctx) error {
 		})
 	}
 
+	// Создаем базовые категории для нового пользователя
+	if err := a.createDefaultCategories(user.ID); err != nil {
+		// Логируем ошибку, но не останавливаем регистрацию
+		utils.SendTelegramMessage("Ошибка при создании базовых категорий для пользователя ID " +
+			fmt.Sprint(user.ID) + ": " + err.Error())
+	}
+
 	// Дешифруем для ответа
 	user.FirstName, _ = utils.DecryptString(user.FirstName)
 	user.LastName, _ = utils.DecryptString(user.LastName)
@@ -171,6 +179,42 @@ func (a *AuthController) Register(c *fiber.Ctx) error {
 			"user": user.ToUserResponse(),
 		},
 	})
+}
+
+// createDefaultCategories создает базовые категории для нового пользователя
+func (a *AuthController) createDefaultCategories(userID uint) error {
+	for _, defaultCategory := range models.DefaultCategories {
+		category := models.Category{
+			Name:        defaultCategory.Name,
+			Description: defaultCategory.Description,
+			Type:        defaultCategory.Type,
+			UserID:      userID,
+			Color:       defaultCategory.Color,
+			Icon:        defaultCategory.Icon,
+		}
+
+		if err := db.DB.Create(&category).Error; err != nil {
+			return err
+		}
+	}
+
+	// Создаем уведомление о базовых категориях
+	notification := models.Notification{
+		UserID:     userID,
+		Type:       models.NotificationSystem,
+		Title:      "Базовые категории созданы",
+		Message:    "Для вас созданы 5 базовых категорий. Вы можете начать использовать их или создать свои собственные.",
+		Importance: models.NotificationNormal,
+		IsRead:     false,
+	}
+
+	if err := db.DB.Create(&notification).Error; err != nil {
+		// Логируем ошибку, но не возвращаем, так как категории уже созданы
+		utils.SendTelegramMessage("Ошибка при создании уведомления о базовых категориях для пользователя ID " +
+			fmt.Sprint(userID) + ": " + err.Error())
+	}
+
+	return nil
 }
 
 // Login аутентификация пользователя
