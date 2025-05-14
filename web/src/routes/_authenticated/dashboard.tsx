@@ -823,11 +823,11 @@ function Dashboard() {
 
       {/* Диалог добавления транзакции */}
       <TransactionDialog
-        isOpen={isAddingTransaction}
-        onClose={() => setIsAddingTransaction(false)}
+        open={isAddingTransaction}
+        onOpenChange={open => setIsAddingTransaction(open)}
         categories={categories || []}
         onSubmit={handleAddTransaction}
-        isSubmitting={createTransaction.isPending}
+        isCreating={createTransaction.isPending}
       />
     </Layout>
   )
