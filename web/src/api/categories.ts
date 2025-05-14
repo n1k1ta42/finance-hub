@@ -1,21 +1,31 @@
 import api from '@/lib/api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+export type CategoryType = 'income' | 'expense'
+
 export interface Category {
   id: number
   name: string
   description: string
-  type: 'expense' | 'income'
+  type: CategoryType
+  userId: number
   color: string
   icon: string
   createdAt: string
   updatedAt: string
 }
 
+// Расширенный интерфейс для категорий с информацией о пользователе (для админа)
+export interface AdminCategory extends Category {
+  userEmail: string
+  userFirstName: string
+  userLastName: string
+}
+
 export interface CategoryFormData {
   name: string
   description: string
-  type: 'expense' | 'income'
+  type: CategoryType
   color: string
   icon: string
 }
@@ -29,6 +39,13 @@ interface CategoryResponse {
 interface CategoriesResponse {
   status: string
   data: Category[]
+  message?: string
+}
+
+// Интерфейс для категорий с информацией о пользователе (для админа)
+interface AdminCategoriesResponse {
+  status: string
+  data: AdminCategory[]
   message?: string
 }
 
@@ -88,6 +105,20 @@ const deleteCategory = async (id: number): Promise<void> => {
   }
 }
 
+// Получение всех категорий от всех пользователей (только для админов)
+const getAllUsersCategories = async (
+  userId?: number,
+): Promise<AdminCategoriesResponse> => {
+  try {
+    const params = userId ? { userId } : undefined
+    const response = await api.get('/admin/categories', { params })
+    return response.data
+  } catch (error) {
+    console.error('Ошибка при получении категорий всех пользователей:', error)
+    throw error
+  }
+}
+
 // React Query хуки
 
 export const useCategories = () => {
@@ -137,5 +168,13 @@ export const useDeleteCategory = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
     },
+  })
+}
+
+export const useAllUsersCategories = (userId?: number) => {
+  return useQuery({
+    queryKey: ['adminCategories', userId],
+    queryFn: () => getAllUsersCategories(userId),
+    select: data => data.data,
   })
 }

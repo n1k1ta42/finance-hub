@@ -59,6 +59,7 @@ func SetupRoutes(app *fiber.App, config *config.Config) {
 	admin := protected.Group("/admin", middlewares.RequireAdmin)
 	admin.Get("/users", authController.GetUsers)
 	admin.Put("/users/:id/role", authController.UpdateUserRole)
+	admin.Get("/categories", categoryController.GetAllUsersCategories)
 
 	// Отзывы (доступны всем с JWT)
 	reviews := protected.Group("/reviews")

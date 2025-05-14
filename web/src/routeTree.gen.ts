@@ -34,6 +34,7 @@ import { Route as AuthenticatedBudgetsIndexImport } from './routes/_authenticate
 import { Route as AuthenticatedBudgetsNewImport } from './routes/_authenticated/budgets/new'
 import { Route as AuthenticatedBudgetsBudgetIdImport } from './routes/_authenticated/budgets/$budgetId'
 import { Route as AuthenticatedAdminUsersImport } from './routes/_authenticated/admin/users'
+import { Route as AuthenticatedAdminCategoriesImport } from './routes/_authenticated/admin/categories'
 import { Route as AuthenticatedBudgetsEditBudgetIdImport } from './routes/_authenticated/budgets/edit.$budgetId'
 import { Route as AuthenticatedAdminUsersUserIdImport } from './routes/_authenticated/admin/users_.$userId'
 
@@ -180,6 +181,13 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersImport.update({
   path: '/admin/users',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+
+const AuthenticatedAdminCategoriesRoute =
+  AuthenticatedAdminCategoriesImport.update({
+    id: '/admin/categories',
+    path: '/admin/categories',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 const AuthenticatedBudgetsEditBudgetIdRoute =
   AuthenticatedBudgetsEditBudgetIdImport.update({
@@ -332,6 +340,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTransactionsImport
       parentRoute: typeof AuthenticatedImport
     }
+    '/_authenticated/admin/categories': {
+      id: '/_authenticated/admin/categories'
+      path: '/admin/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AuthenticatedAdminCategoriesImport
+      parentRoute: typeof AuthenticatedImport
+    }
     '/_authenticated/admin/users': {
       id: '/_authenticated/admin/users'
       path: '/admin/users'
@@ -389,6 +404,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRoute
   AuthenticatedSubscriptionsRoute: typeof AuthenticatedSubscriptionsRoute
   AuthenticatedTransactionsRoute: typeof AuthenticatedTransactionsRoute
+  AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedBudgetsBudgetIdRoute: typeof AuthenticatedBudgetsBudgetIdRoute
   AuthenticatedBudgetsNewRoute: typeof AuthenticatedBudgetsNewRoute
@@ -407,6 +423,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedStatisticsRoute: AuthenticatedStatisticsRoute,
   AuthenticatedSubscriptionsRoute: AuthenticatedSubscriptionsRoute,
   AuthenticatedTransactionsRoute: AuthenticatedTransactionsRoute,
+  AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedBudgetsBudgetIdRoute: AuthenticatedBudgetsBudgetIdRoute,
   AuthenticatedBudgetsNewRoute: AuthenticatedBudgetsNewRoute,
@@ -439,6 +456,7 @@ export interface FileRoutesByFullPath {
   '/statistics': typeof AuthenticatedStatisticsRoute
   '/subscriptions': typeof AuthenticatedSubscriptionsRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
+  '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/budgets/$budgetId': typeof AuthenticatedBudgetsBudgetIdRoute
   '/budgets/new': typeof AuthenticatedBudgetsNewRoute
@@ -467,6 +485,7 @@ export interface FileRoutesByTo {
   '/statistics': typeof AuthenticatedStatisticsRoute
   '/subscriptions': typeof AuthenticatedSubscriptionsRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
+  '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/budgets/$budgetId': typeof AuthenticatedBudgetsBudgetIdRoute
   '/budgets/new': typeof AuthenticatedBudgetsNewRoute
@@ -496,6 +515,7 @@ export interface FileRoutesById {
   '/_authenticated/statistics': typeof AuthenticatedStatisticsRoute
   '/_authenticated/subscriptions': typeof AuthenticatedSubscriptionsRoute
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
+  '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/budgets/$budgetId': typeof AuthenticatedBudgetsBudgetIdRoute
   '/_authenticated/budgets/new': typeof AuthenticatedBudgetsNewRoute
@@ -526,6 +546,7 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/subscriptions'
     | '/transactions'
+    | '/admin/categories'
     | '/admin/users'
     | '/budgets/$budgetId'
     | '/budgets/new'
@@ -553,6 +574,7 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/subscriptions'
     | '/transactions'
+    | '/admin/categories'
     | '/admin/users'
     | '/budgets/$budgetId'
     | '/budgets/new'
@@ -580,6 +602,7 @@ export interface FileRouteTypes {
     | '/_authenticated/statistics'
     | '/_authenticated/subscriptions'
     | '/_authenticated/transactions'
+    | '/_authenticated/admin/categories'
     | '/_authenticated/admin/users'
     | '/_authenticated/budgets/$budgetId'
     | '/_authenticated/budgets/new'
@@ -661,6 +684,7 @@ export const routeTree = rootRoute
         "/_authenticated/statistics",
         "/_authenticated/subscriptions",
         "/_authenticated/transactions",
+        "/_authenticated/admin/categories",
         "/_authenticated/admin/users",
         "/_authenticated/budgets/$budgetId",
         "/_authenticated/budgets/new",
@@ -718,6 +742,10 @@ export const routeTree = rootRoute
     },
     "/_authenticated/transactions": {
       "filePath": "_authenticated/transactions.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/admin/categories": {
+      "filePath": "_authenticated/admin/categories.tsx",
       "parent": "/_authenticated"
     },
     "/_authenticated/admin/users": {

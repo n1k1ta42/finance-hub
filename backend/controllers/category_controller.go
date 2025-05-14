@@ -190,3 +190,56 @@ func (ct *CategoryController) DeleteCategory(c *fiber.Ctx) error {
 		"message": "Категория успешно удалена",
 	})
 }
+
+// GetAllUsersCategories получает категории всех пользователей (только для администраторов)
+func (ct *CategoryController) GetAllUsersCategories(c *fiber.Ctx) error {
+	// Получаем необязательный параметр userId для фильтрации
+	userIDParam := c.Query("userId")
+	
+	// Базовый запрос с информацией о пользователе
+	query := db.DB.Model(&models.Category{}).
+		Select("categories.*, users.email, users.first_name, users.last_name").
+		Joins("LEFT JOIN users ON categories.user_id = users.id").
+		Order("categories.name")
+	
+	// Если указан userId, применяем фильтр
+	if userIDParam != "" {
+		query = query.Where("categories.user_id = ?", userIDParam)
+	}
+	
+	// Получаем категории
+	var categories []struct {
+		models.Category
+		Email     string `json:"userEmail"`
+		FirstName string `json:"userFirstName"`
+		LastName  string `json:"userLastName"`
+	}
+	
+	if err := query.Find(&categories).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Не удалось получить категории",
+			"error":   err.Error(),
+		})
+	}
+	
+	// Расшифровываем имена и фамилии пользователей
+	for i := range categories {
+		// Расшифровываем имя пользователя
+		firstName, err := utils.DecryptString(categories[i].FirstName)
+		if err == nil {
+			categories[i].FirstName = firstName
+		}
+		
+		// Расшифровываем фамилию пользователя
+		lastName, err := utils.DecryptString(categories[i].LastName)
+		if err == nil {
+			categories[i].LastName = lastName
+		}
+	}
+	
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": "success",
+		"data":   categories,
+	})
+}

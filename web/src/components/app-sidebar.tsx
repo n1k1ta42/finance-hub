@@ -82,6 +82,12 @@ const data = {
       icon: Users,
       items: [],
     },
+    {
+      title: 'Категории пользователей',
+      url: '/admin/categories',
+      icon: Component,
+      items: [],
+    },
   ],
   navSecondary: [
     {
