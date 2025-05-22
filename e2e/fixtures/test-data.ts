@@ -3,8 +3,8 @@
  */
 export const users = {
   admin: {
-    username: "test@example.com",
-    password: "password123",
+    username: "admin@example.com",
+    password: "nikitathebest",
   },
   user: {
     username: "test@example.com",

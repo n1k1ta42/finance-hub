@@ -36,7 +36,7 @@ export default defineConfig({
   ],
   webServer: {
     command: "cd ../web && yarn dev",
-    url: "http://localhost:3000",
+    url: "http://localhost:3001",
     reuseExistingServer: !process.env.CI,
   },
 });
