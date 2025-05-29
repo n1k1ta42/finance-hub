@@ -29,7 +29,7 @@ function Component() {
           </TabsList>
 
           <TabsContent value='reviews' className='mt-6'>
-            <ReviewsList currentUserId={user?.id} />
+            <ReviewsList currentUserId={user?.data?.id} />
           </TabsContent>
 
           <TabsContent value='add' className='mt-6'>

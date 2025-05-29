@@ -1,4 +1,6 @@
 import { useCategories } from '@/api/categories'
+import { useInvestmentsStats } from '@/api/investments'
+import { useProjectsStats } from '@/api/projects'
 import {
   exportStatsToPDF,
   useBalanceDynamics,
@@ -23,7 +25,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSubscription } from '@/hooks/use-subscription'
 import { getCategoryIndicatorClasses } from '@/lib/category-utils'
 import { formatCurrency } from '@/lib/currency-utils'
@@ -41,7 +43,16 @@ import {
   subMonths,
 } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { CalendarIcon, Download, RefreshCw } from 'lucide-react'
+import {
+  BarChart3,
+  CalendarIcon,
+  CircleCheck,
+  Download,
+  RefreshCw,
+  Target,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react'
 import React, { useState } from 'react'
 import {
   Bar,
@@ -85,6 +96,9 @@ function Component() {
     from: startOfMonth(today),
     to: endOfMonth(today),
   })
+
+  const [activeTab, setActiveTab] = useState('transactions')
+  const { canAccess } = useSubscription()
 
   // Функция для форматирования диапазона дат для отображения
   const formatDateRange = (range: DateRange) => {
@@ -162,6 +176,12 @@ function Component() {
       startDate: format(dateRange.from, 'yyyy-MM-dd'),
       endDate: format(dateRange.to, 'yyyy-MM-dd'),
     })
+
+  // Запросы для статистики проектов и инвестиций
+  const { data: projectsStats, isLoading: isProjectsStatsLoading } =
+    useProjectsStats()
+  const { data: investmentsStats, isLoading: isInvestmentsStatsLoading } =
+    useInvestmentsStats()
 
   const handleRefresh = () => {
     refetchBalance()
@@ -380,9 +400,6 @@ function Component() {
   // Переменная состояния для переключения между типами графиков
   const [chartType, setChartType] = useState<'bar' | 'pie'>('pie')
 
-  // Используем хук подписки для проверки доступа к экспорту PDF
-  const { canAccess } = useSubscription()
-
   // Преобразование данных динамики для графика
   const dynamicsChartData = React.useMemo(() => {
     return dynamicsData?.dynamics || []
@@ -554,353 +571,1114 @@ function Component() {
           </div>
         </div>
 
-        {/* Графики доходов и расходов */}
-        <div className='grid gap-4 md:grid-cols-2'>
-          {/* График доходов и расходов */}
-          <Card className='transition-all duration-300 hover:shadow-md'>
-            <CardHeader>
-              <CardTitle>Доходы и расходы</CardTitle>
-              <CardDescription>
-                За период {formatDateRange(dateRange)}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='h-[350px]'>
-              {isBalanceLoading ? (
-                <div className='flex h-full items-center justify-center'>
-                  <Skeleton className='h-[300px] w-full rounded' />
-                </div>
-              ) : (
-                <ResponsiveContainer width='100%' height='100%'>
-                  <BarChart
-                    data={[
-                      {
-                        name: 'Доходы',
-                        value: balanceData?.stats?.totalIncome || 0,
-                      },
-                      {
-                        name: 'Расходы',
-                        value: balanceData?.stats?.totalExpense || 0,
-                      },
-                    ]}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray='3 3' />
-                    <XAxis dataKey='name' />
-                    <YAxis />
-                    <Tooltip
-                      formatter={(value: number) => [
-                        formatCurrency(value),
-                        'Сумма',
-                      ]}
-                    />
-                    <Bar dataKey='value' fill='#8884d8'>
-                      <Cell fill='#82ca9d' />
-                      <Cell fill='#ff7675' />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+        {/* Вкладки для разных типов статистики */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
+          <TabsList className='grid w-full grid-cols-3'>
+            <TabsTrigger value='transactions'>Транзакции</TabsTrigger>
+            <TabsTrigger value='projects'>Проекты</TabsTrigger>
+            <TabsTrigger value='investments'>Инвестиции</TabsTrigger>
+          </TabsList>
 
-          {/* Баланс по месяцам */}
-          <Card className='transition-all duration-300 hover:shadow-md'>
-            <CardHeader>
-              <CardTitle>Итоговый баланс</CardTitle>
-              <CardDescription>
-                За период {formatDateRange(dateRange)}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='h-[350px]'>
-              {isBalanceLoading ? (
-                <div className='flex h-full items-center justify-center'>
-                  <Skeleton className='h-[300px] w-full rounded' />
-                </div>
-              ) : (
-                <div className='flex h-full flex-col items-center justify-center'>
-                  <div className='animate-in fade-in-20 slide-in-from-bottom-5 mb-4 text-5xl font-bold duration-1000'>
-                    {formatCurrency(balanceData?.stats?.balance || 0)}
-                  </div>
-                  <div className='text-muted-foreground text-lg'>
-                    Итоговый баланс
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+          {/* Вкладка транзакций */}
+          <TabsContent value='transactions' className='space-y-4'>
+            {/* Графики доходов и расходов */}
+            <div className='grid gap-4 md:grid-cols-2'>
+              {/* График доходов и расходов */}
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <CardTitle>Доходы и расходы</CardTitle>
+                  <CardDescription>
+                    За период {formatDateRange(dateRange)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className='h-[350px]'>
+                  {isBalanceLoading ? (
+                    <div className='flex h-full items-center justify-center'>
+                      <Skeleton className='h-[300px] w-full rounded' />
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width='100%' height='100%'>
+                      <BarChart
+                        data={[
+                          {
+                            name: 'Доходы',
+                            value: balanceData?.stats?.totalIncome || 0,
+                          },
+                          {
+                            name: 'Расходы',
+                            value: balanceData?.stats?.totalExpense || 0,
+                          },
+                        ]}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray='3 3' />
+                        <XAxis dataKey='name' />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value: number) => [
+                            formatCurrency(value),
+                            'Сумма',
+                          ]}
+                        />
+                        <Bar dataKey='value' fill='#8884d8'>
+                          <Cell fill='#82ca9d' />
+                          <Cell fill='#ff7675' />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
 
-        {/* Динамика баланса по дням */}
-        <div className='mt-4'>
-          <Card className='transition-all duration-300 hover:shadow-md'>
-            <CardHeader>
-              <CardTitle>Динамика баланса</CardTitle>
-              <CardDescription>
-                Показатели баланса за период {formatDateRange(dateRange)}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='h-[350px]'>
-              {isBalanceLoading || isDynamicsLoading ? (
-                <div className='flex h-full items-center justify-center'>
-                  <Skeleton className='h-[300px] w-full rounded' />
-                </div>
-              ) : dynamicsChartData.length === 0 ? (
-                <div className='flex h-full flex-col items-center justify-center text-center'>
-                  <p className='text-muted-foreground'>
-                    Нет данных за выбранный период
-                  </p>
-                </div>
-              ) : (
-                <ResponsiveContainer width='100%' height='100%'>
-                  <LineChart
-                    data={dynamicsChartData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray='3 3' />
-                    <XAxis dataKey='date' tickFormatter={formatXAxis} />
-                    <YAxis />
-                    <Tooltip
-                      labelFormatter={label =>
-                        `Дата: ${format(new Date(label), 'dd.MM.yyyy HH:mm')}`
+              {/* Баланс по месяцам */}
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <CardTitle>Итоговый баланс</CardTitle>
+                  <CardDescription>
+                    За период {formatDateRange(dateRange)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className='h-[350px]'>
+                  {isBalanceLoading ? (
+                    <div className='flex h-full items-center justify-center'>
+                      <Skeleton className='h-[300px] w-full rounded' />
+                    </div>
+                  ) : (
+                    <div className='flex h-full flex-col items-center justify-center'>
+                      <div className='animate-in fade-in-20 slide-in-from-bottom-5 mb-4 text-5xl font-bold duration-1000'>
+                        {formatCurrency(balanceData?.stats?.balance || 0)}
+                      </div>
+                      <div className='text-muted-foreground text-lg'>
+                        Итоговый баланс
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Динамика баланса по дням */}
+            <div className='mt-4'>
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <CardTitle>Динамика баланса</CardTitle>
+                  <CardDescription>
+                    Показатели баланса за период {formatDateRange(dateRange)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className='h-[350px]'>
+                  {isBalanceLoading || isDynamicsLoading ? (
+                    <div className='flex h-full items-center justify-center'>
+                      <Skeleton className='h-[300px] w-full rounded' />
+                    </div>
+                  ) : dynamicsChartData.length === 0 ? (
+                    <div className='flex h-full flex-col items-center justify-center text-center'>
+                      <p className='text-muted-foreground'>
+                        Нет данных за выбранный период
+                      </p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width='100%' height='100%'>
+                      <LineChart
+                        data={dynamicsChartData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray='3 3' />
+                        <XAxis dataKey='date' tickFormatter={formatXAxis} />
+                        <YAxis />
+                        <Tooltip
+                          labelFormatter={label =>
+                            `Дата: ${format(new Date(label), 'dd.MM.yyyy HH:mm')}`
+                          }
+                          formatter={(value: number) => [
+                            formatCurrency(value),
+                            'Сумма',
+                          ]}
+                        />
+                        <Legend />
+                        <Line
+                          type='monotone'
+                          dataKey='income'
+                          stroke='#82ca9d'
+                          activeDot={{ r: 8 }}
+                          name='Доходы'
+                        />
+                        <Line
+                          type='monotone'
+                          dataKey='expense'
+                          stroke='#ff7675'
+                          activeDot={{ r: 8 }}
+                          name='Расходы'
+                        />
+                        <Line
+                          type='monotone'
+                          dataKey='balance'
+                          stroke='#0088FE'
+                          activeDot={{ r: 8 }}
+                          name='Баланс'
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Графики распределения по категориям */}
+            <div className='mt-4 grid gap-4 md:grid-cols-2'>
+              {/* Расходы по категориям */}
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <CardTitle>Расходы по категориям</CardTitle>
+                      <CardDescription>
+                        За период {formatDateRange(dateRange)}
+                      </CardDescription>
+                    </div>
+                    <Tabs
+                      defaultValue='pie'
+                      onValueChange={value =>
+                        setChartType(value as 'bar' | 'pie')
                       }
-                      formatter={(value: number) => [
-                        formatCurrency(value),
-                        'Сумма',
-                      ]}
-                    />
-                    <Legend />
-                    <Line
-                      type='monotone'
-                      dataKey='income'
-                      stroke='#82ca9d'
-                      activeDot={{ r: 8 }}
-                      name='Доходы'
-                    />
-                    <Line
-                      type='monotone'
-                      dataKey='expense'
-                      stroke='#ff7675'
-                      activeDot={{ r: 8 }}
-                      name='Расходы'
-                    />
-                    <Line
-                      type='monotone'
-                      dataKey='balance'
-                      stroke='#0088FE'
-                      activeDot={{ r: 8 }}
-                      name='Баланс'
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Графики распределения по категориям */}
-        <div className='mt-4 grid gap-4 md:grid-cols-2'>
-          {/* Расходы по категориям */}
-          <Card className='transition-all duration-300 hover:shadow-md'>
-            <CardHeader>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <CardTitle>Расходы по категориям</CardTitle>
-                  <CardDescription>
-                    За период {formatDateRange(dateRange)}
-                  </CardDescription>
-                </div>
-                <Tabs
-                  defaultValue='pie'
-                  onValueChange={value => setChartType(value as 'bar' | 'pie')}
-                >
-                  <TabsList>
-                    <TabsTrigger value='pie'>Круговая</TabsTrigger>
-                    <TabsTrigger value='bar'>Столбчатая</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-            </CardHeader>
-            <CardContent className='h-[350px]'>
-              {isExpenseCategoryStatsLoading ? (
-                <div className='flex h-full items-center justify-center'>
-                  <Skeleton className='h-[300px] w-full rounded' />
-                </div>
-              ) : expensePieChartData.length === 0 ? (
-                <div className='flex h-full flex-col items-center justify-center text-center'>
-                  <p className='text-muted-foreground'>
-                    Нет данных за выбранный период
-                  </p>
-                </div>
-              ) : chartType === 'pie' ? (
-                <ResponsiveContainer width='100%' height='100%'>
-                  <PieChart>
-                    <Pie
-                      data={expensePieChartData}
-                      cx='50%'
-                      cy='50%'
-                      innerRadius={60}
-                      outerRadius={80}
-                      fill='#8884d8'
-                      paddingAngle={1}
-                      dataKey='value'
-                      animationDuration={1000}
-                      animationBegin={100}
                     >
-                      {expensePieChartData.map(
-                        (entry: PieChartData, index: number) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={entry.color || COLORS[index % COLORS.length]}
-                          />
-                        ),
-                      )}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number, _name: string, props: any) => [
-                        `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
-                        props.payload.name,
-                      ]}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <ResponsiveContainer width='100%' height='100%'>
-                  <BarChart
-                    data={expensePieChartData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
-                  >
-                    <CartesianGrid strokeDasharray='3 3' />
-                    <XAxis
-                      dataKey='name'
-                      angle={-45}
-                      textAnchor='end'
-                      height={100}
-                    />
-                    <YAxis />
-                    <Tooltip
-                      formatter={(value: number, _name: string, props: any) => [
-                        `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
-                        props.payload.name,
-                      ]}
-                    />
-                    <Bar dataKey='value' fill='#ff7675'>
-                      {expensePieChartData.map(
-                        (entry: PieChartData, index: number) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={entry.color || COLORS[index % COLORS.length]}
-                          />
-                        ),
-                      )}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+                      <TabsList>
+                        <TabsTrigger value='pie'>Круговая</TabsTrigger>
+                        <TabsTrigger value='bar'>Столбчатая</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                </CardHeader>
+                <CardContent className='h-[350px]'>
+                  {isExpenseCategoryStatsLoading ? (
+                    <div className='flex h-full items-center justify-center'>
+                      <Skeleton className='h-[300px] w-full rounded' />
+                    </div>
+                  ) : expensePieChartData.length === 0 ? (
+                    <div className='flex h-full flex-col items-center justify-center text-center'>
+                      <p className='text-muted-foreground'>
+                        Нет данных за выбранный период
+                      </p>
+                    </div>
+                  ) : chartType === 'pie' ? (
+                    <ResponsiveContainer width='100%' height='100%'>
+                      <PieChart>
+                        <Pie
+                          data={expensePieChartData}
+                          cx='50%'
+                          cy='50%'
+                          innerRadius={60}
+                          outerRadius={80}
+                          fill='#8884d8'
+                          paddingAngle={1}
+                          dataKey='value'
+                          animationDuration={1000}
+                          animationBegin={100}
+                        >
+                          {expensePieChartData.map(
+                            (entry: PieChartData, index: number) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={
+                                  entry.color || COLORS[index % COLORS.length]
+                                }
+                              />
+                            ),
+                          )}
+                        </Pie>
+                        <Tooltip
+                          formatter={(
+                            value: number,
+                            _name: string,
+                            props: any,
+                          ) => [
+                            `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
+                            props.payload.name,
+                          ]}
+                        />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <ResponsiveContainer width='100%' height='100%'>
+                      <BarChart
+                        data={expensePieChartData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
+                      >
+                        <CartesianGrid strokeDasharray='3 3' />
+                        <XAxis
+                          dataKey='name'
+                          angle={-45}
+                          textAnchor='end'
+                          height={100}
+                        />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(
+                            value: number,
+                            _name: string,
+                            props: any,
+                          ) => [
+                            `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
+                            props.payload.name,
+                          ]}
+                        />
+                        <Bar dataKey='value' fill='#ff7675'>
+                          {expensePieChartData.map(
+                            (entry: PieChartData, index: number) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={
+                                  entry.color || COLORS[index % COLORS.length]
+                                }
+                              />
+                            ),
+                          )}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Доходы по категориям */}
-          <Card className='transition-all duration-300 hover:shadow-md'>
-            <CardHeader>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <CardTitle>Доходы по категориям</CardTitle>
-                  <CardDescription>
-                    За период {formatDateRange(dateRange)}
-                  </CardDescription>
-                </div>
-                <Tabs
-                  defaultValue='pie'
-                  onValueChange={value => setChartType(value as 'bar' | 'pie')}
-                >
-                  <TabsList>
-                    <TabsTrigger value='pie'>Круговая</TabsTrigger>
-                    <TabsTrigger value='bar'>Столбчатая</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-            </CardHeader>
-            <CardContent className='h-[350px]'>
-              {isIncomeCategoryStatsLoading ? (
-                <div className='flex h-full items-center justify-center'>
-                  <Skeleton className='h-[300px] w-full rounded' />
-                </div>
-              ) : incomePieChartData.length === 0 ? (
-                <div className='flex h-full flex-col items-center justify-center text-center'>
-                  <p className='text-muted-foreground'>
-                    Нет данных за выбранный период
-                  </p>
-                </div>
-              ) : chartType === 'pie' ? (
-                <ResponsiveContainer width='100%' height='100%'>
-                  <PieChart>
-                    <Pie
-                      data={incomePieChartData}
-                      cx='50%'
-                      cy='50%'
-                      innerRadius={60}
-                      outerRadius={80}
-                      fill='#8884d8'
-                      paddingAngle={1}
-                      dataKey='value'
-                      animationDuration={1000}
-                      animationBegin={100}
+              {/* Доходы по категориям */}
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <CardTitle>Доходы по категориям</CardTitle>
+                      <CardDescription>
+                        За период {formatDateRange(dateRange)}
+                      </CardDescription>
+                    </div>
+                    <Tabs
+                      defaultValue='pie'
+                      onValueChange={value =>
+                        setChartType(value as 'bar' | 'pie')
+                      }
                     >
-                      {incomePieChartData.map(
-                        (entry: PieChartData, index: number) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={entry.color || COLORS[index % COLORS.length]}
-                          />
+                      <TabsList>
+                        <TabsTrigger value='pie'>Круговая</TabsTrigger>
+                        <TabsTrigger value='bar'>Столбчатая</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                </CardHeader>
+                <CardContent className='h-[350px]'>
+                  {isIncomeCategoryStatsLoading ? (
+                    <div className='flex h-full items-center justify-center'>
+                      <Skeleton className='h-[300px] w-full rounded' />
+                    </div>
+                  ) : incomePieChartData.length === 0 ? (
+                    <div className='flex h-full flex-col items-center justify-center text-center'>
+                      <p className='text-muted-foreground'>
+                        Нет данных за выбранный период
+                      </p>
+                    </div>
+                  ) : chartType === 'pie' ? (
+                    <ResponsiveContainer width='100%' height='100%'>
+                      <PieChart>
+                        <Pie
+                          data={incomePieChartData}
+                          cx='50%'
+                          cy='50%'
+                          innerRadius={60}
+                          outerRadius={80}
+                          fill='#8884d8'
+                          paddingAngle={1}
+                          dataKey='value'
+                          animationDuration={1000}
+                          animationBegin={100}
+                        >
+                          {incomePieChartData.map(
+                            (entry: PieChartData, index: number) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={
+                                  entry.color || COLORS[index % COLORS.length]
+                                }
+                              />
+                            ),
+                          )}
+                        </Pie>
+                        <Tooltip
+                          formatter={(
+                            value: number,
+                            _name: string,
+                            props: any,
+                          ) => [
+                            `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
+                            props.payload.name,
+                          ]}
+                        />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <ResponsiveContainer width='100%' height='100%'>
+                      <BarChart
+                        data={incomePieChartData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
+                      >
+                        <CartesianGrid strokeDasharray='3 3' />
+                        <XAxis
+                          dataKey='name'
+                          angle={-45}
+                          textAnchor='end'
+                          height={100}
+                        />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(
+                            value: number,
+                            _name: string,
+                            props: any,
+                          ) => [
+                            `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
+                            props.payload.name,
+                          ]}
+                        />
+                        <Bar dataKey='value' fill='#82ca9d'>
+                          {incomePieChartData.map(
+                            (entry: PieChartData, index: number) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={
+                                  entry.color || COLORS[index % COLORS.length]
+                                }
+                              />
+                            ),
+                          )}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Вкладка проектов */}
+          <TabsContent value='projects' className='space-y-4'>
+            {/* Основная статистика проектов */}
+            <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardContent className='p-4'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-muted-foreground text-sm font-medium'>
+                        Всего проектов
+                      </p>
+                      <p className='text-2xl font-bold'>
+                        {projectsStats?.totalProjects || 0}
+                      </p>
+                    </div>
+                    <div className='flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600'>
+                      <Target className='h-6 w-6' />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardContent className='p-4'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-muted-foreground text-sm font-medium'>
+                        Активных
+                      </p>
+                      <p className='text-2xl font-bold text-green-600'>
+                        {projectsStats?.activeProjects || 0}
+                      </p>
+                    </div>
+                    <div className='flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600'>
+                      <TrendingUp className='h-6 w-6' />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardContent className='p-4'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-muted-foreground text-sm font-medium'>
+                        Накоплено
+                      </p>
+                      <p className='text-2xl font-bold text-purple-600'>
+                        {formatCurrency(projectsStats?.totalCurrentAmount || 0)}
+                      </p>
+                    </div>
+                    <div className='flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 text-purple-600'>
+                      <Wallet className='h-6 w-6' />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardContent className='p-4'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-muted-foreground text-sm font-medium'>
+                        Средний прогресс
+                      </p>
+                      <p className='text-2xl font-bold text-orange-600'>
+                        {Math.round(projectsStats?.averageProgress || 0)}%
+                      </p>
+                    </div>
+                    <div className='flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-600'>
+                      <BarChart3 className='h-6 w-6' />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Графики и аналитика проектов */}
+            <div className='grid gap-4 md:grid-cols-2'>
+              {/* Распределение по типам и статусам */}
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <CardTitle>Распределение проектов</CardTitle>
+                  <CardDescription>По типам и статусам</CardDescription>
+                </CardHeader>
+                <CardContent className='h-[300px]'>
+                  {isProjectsStatsLoading ? (
+                    <div className='flex h-full items-center justify-center'>
+                      <Skeleton className='h-[250px] w-full rounded' />
+                    </div>
+                  ) : (
+                    <div className='grid h-full grid-cols-2 gap-4'>
+                      <div>
+                        <h4 className='mb-4 text-center text-sm font-medium'>
+                          По типам
+                        </h4>
+                        <ResponsiveContainer width='100%' height='80%'>
+                          <PieChart>
+                            <Pie
+                              data={[
+                                {
+                                  name: 'Накопления',
+                                  value:
+                                    projectsStats?.projectsByType?.saving || 0,
+                                  fill: '#22c55e',
+                                },
+                                {
+                                  name: 'Кредиты',
+                                  value:
+                                    projectsStats?.projectsByType?.loan || 0,
+                                  fill: '#ef4444',
+                                },
+                              ]}
+                              cx='50%'
+                              cy='50%'
+                              innerRadius={25}
+                              outerRadius={50}
+                              dataKey='value'
+                            ></Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div>
+                        <h4 className='mb-4 text-center text-sm font-medium'>
+                          По статусам
+                        </h4>
+                        <ResponsiveContainer width='100%' height='80%'>
+                          <PieChart>
+                            <Pie
+                              data={[
+                                {
+                                  name: 'Открытые',
+                                  value:
+                                    projectsStats?.projectsByStatus?.open || 0,
+                                  fill: '#3b82f6',
+                                },
+                                {
+                                  name: 'Закрытые',
+                                  value:
+                                    projectsStats?.projectsByStatus?.closed ||
+                                    0,
+                                  fill: '#6b7280',
+                                },
+                                {
+                                  name: 'Архивные',
+                                  value:
+                                    projectsStats?.projectsByStatus?.archived ||
+                                    0,
+                                  fill: '#d1d5db',
+                                },
+                              ]}
+                              cx='50%'
+                              cy='50%'
+                              innerRadius={25}
+                              outerRadius={50}
+                              dataKey='value'
+                            ></Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Динамика платежей */}
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <CardTitle>Динамика платежей</CardTitle>
+                  <CardDescription>Платежи по месяцам</CardDescription>
+                </CardHeader>
+                <CardContent className='h-[300px]'>
+                  {isProjectsStatsLoading ? (
+                    <div className='flex h-full items-center justify-center'>
+                      <Skeleton className='h-[250px] w-full rounded' />
+                    </div>
+                  ) : projectsStats?.paymentsDynamics?.length > 0 ? (
+                    <ResponsiveContainer width='100%' height='100%'>
+                      <BarChart data={projectsStats.paymentsDynamics}>
+                        <CartesianGrid strokeDasharray='3 3' />
+                        <XAxis
+                          dataKey='month'
+                          tickFormatter={value => {
+                            const [year, month] = value.split('-')
+                            return `${month}/${year.slice(-2)}`
+                          }}
+                        />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value: number) => [
+                            formatCurrency(value),
+                            'Сумма платежей',
+                          ]}
+                          labelFormatter={label => {
+                            const [year, month] = label.split('-')
+                            const date = new Date(
+                              parseInt(year),
+                              parseInt(month) - 1,
+                            )
+                            return format(date, 'MMMM yyyy', { locale: ru })
+                          }}
+                        />
+                        <Bar dataKey='amount' fill='#3b82f6' />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className='flex h-full items-center justify-center text-center'>
+                      <p className='text-muted-foreground'>
+                        Нет данных о платежах
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Распределение прогресса */}
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <CardTitle>Распределение по прогрессу</CardTitle>
+                  <CardDescription>
+                    Количество проектов в диапазонах
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className='h-[300px]'>
+                  {isProjectsStatsLoading ? (
+                    <div className='flex h-full items-center justify-center'>
+                      <Skeleton className='h-[250px] w-full rounded' />
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width='100%' height='100%'>
+                      <BarChart
+                        data={[
+                          {
+                            range: '0-25%',
+                            count:
+                              projectsStats?.progressDistribution?.['0-25'] ||
+                              0,
+                            fill: '#ef4444',
+                          },
+                          {
+                            range: '25-50%',
+                            count:
+                              projectsStats?.progressDistribution?.['25-50'] ||
+                              0,
+                            fill: '#f97316',
+                          },
+                          {
+                            range: '50-75%',
+                            count:
+                              projectsStats?.progressDistribution?.['50-75'] ||
+                              0,
+                            fill: '#eab308',
+                          },
+                          {
+                            range: '75-100%',
+                            count:
+                              projectsStats?.progressDistribution?.['75-100'] ||
+                              0,
+                            fill: '#84cc16',
+                          },
+                          {
+                            range: '100%+',
+                            count:
+                              projectsStats?.progressDistribution?.['100+'] ||
+                              0,
+                            fill: '#22c55e',
+                          },
+                        ]}
+                      >
+                        <CartesianGrid strokeDasharray='3 3' />
+                        <XAxis dataKey='range' />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value: number) => [
+                            value,
+                            'Количество проектов',
+                          ]}
+                        />
+                        <Bar dataKey='count'>
+                          {projectsStats?.progressDistribution &&
+                            Object.entries(
+                              projectsStats.progressDistribution,
+                            ).map((_, index) => <Cell key={`cell-${index}`} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Топ проекты */}
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <CardTitle>Топ проекты по прогрессу</CardTitle>
+                  <CardDescription>Самые успешные проекты</CardDescription>
+                </CardHeader>
+                <CardContent className='h-[300px] overflow-y-auto'>
+                  {isProjectsStatsLoading ? (
+                    <div className='space-y-3'>
+                      {[...Array(5)].map((_, i) => (
+                        <Skeleton key={i} className='h-16 w-full rounded' />
+                      ))}
+                    </div>
+                  ) : projectsStats?.topProjects?.length > 0 ? (
+                    <div className='space-y-3'>
+                      {projectsStats.topProjects.map(
+                        (project: any, index: number) => (
+                          <div
+                            key={project.id}
+                            className='hover:bg-muted/50 rounded-lg border p-3 transition-colors'
+                          >
+                            <div className='mb-2 flex items-center justify-between'>
+                              <div className='flex items-center gap-2'>
+                                <span className='bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium'>
+                                  {index + 1}
+                                </span>
+                                <span className='text-sm font-medium'>
+                                  {project.name}
+                                </span>
+                              </div>
+                              <span className='text-sm font-bold text-green-600'>
+                                {Math.round(project.progress)}%
+                              </span>
+                            </div>
+                            <div className='text-muted-foreground flex justify-between text-xs'>
+                              <span>
+                                {formatCurrency(project.currentAmount)}
+                              </span>
+                              <span>
+                                из {formatCurrency(project.targetAmount)}
+                              </span>
+                            </div>
+                            <div className='mt-2 h-2 w-full rounded-full bg-gray-200'>
+                              <div
+                                className='h-2 rounded-full bg-green-500 transition-all duration-500'
+                                style={{
+                                  width: `${Math.min(project.progress, 100)}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
                         ),
                       )}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number, _name: string, props: any) => [
-                        `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
-                        props.payload.name,
-                      ]}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <ResponsiveContainer width='100%' height='100%'>
-                  <BarChart
-                    data={incomePieChartData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
-                  >
-                    <CartesianGrid strokeDasharray='3 3' />
-                    <XAxis
-                      dataKey='name'
-                      angle={-45}
-                      textAnchor='end'
-                      height={100}
-                    />
-                    <YAxis />
-                    <Tooltip
-                      formatter={(value: number, _name: string, props: any) => [
-                        `${formatCurrency(value)} (${props.payload.percentage?.toFixed(1)}%)`,
-                        props.payload.name,
-                      ]}
-                    />
-                    <Bar dataKey='value' fill='#82ca9d'>
-                      {incomePieChartData.map(
-                        (entry: PieChartData, index: number) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={entry.color || COLORS[index % COLORS.length]}
-                          />
+                    </div>
+                  ) : (
+                    <div className='flex h-full items-center justify-center text-center'>
+                      <p className='text-muted-foreground'>
+                        Нет данных о проектах
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Вкладка инвестиций */}
+          <TabsContent value='investments' className='space-y-4'>
+            {/* Основная статистика инвестиций */}
+            <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardContent className='p-4'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-muted-foreground text-sm font-medium'>
+                        Всего инвестиций
+                      </p>
+                      <p className='text-2xl font-bold'>
+                        {investmentsStats?.totalInvestments || 0}
+                      </p>
+                    </div>
+                    <div className='flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 text-purple-600'>
+                      <TrendingUp className='h-6 w-6' />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardContent className='p-4'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-muted-foreground text-sm font-medium'>
+                        Активных
+                      </p>
+                      <p className='text-2xl font-bold text-green-600'>
+                        {investmentsStats?.activeInvestments || 0}
+                      </p>
+                    </div>
+                    <div className='flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600'>
+                      <CircleCheck className='h-6 w-6' />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardContent className='p-4'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-muted-foreground text-sm font-medium'>
+                        Общая сумма
+                      </p>
+                      <p className='text-2xl font-bold text-blue-600'>
+                        {formatCurrency(investmentsStats?.totalAmount || 0)}
+                      </p>
+                    </div>
+                    <div className='flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600'>
+                      <Wallet className='h-6 w-6' />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardContent className='p-4'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-muted-foreground text-sm font-medium'>
+                        Средняя доходность
+                      </p>
+                      <p className='text-2xl font-bold text-green-600'>
+                        {Math.round(investmentsStats?.averageReturn || 0)}%
+                      </p>
+                    </div>
+                    <div className='flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600'>
+                      <TrendingUp className='h-6 w-6' />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Графики и аналитика инвестиций */}
+            <div className='grid gap-4 md:grid-cols-2'>
+              {/* Портфельный состав */}
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <CardTitle>Состав портфеля</CardTitle>
+                  <CardDescription>
+                    Распределение по типам инвестиций
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className='h-[300px]'>
+                  {isInvestmentsStatsLoading ? (
+                    <div className='flex h-full items-center justify-center'>
+                      <Skeleton className='h-[250px] w-full rounded' />
+                    </div>
+                  ) : investmentsStats?.portfolioComposition?.length > 0 ? (
+                    <ResponsiveContainer width='100%' height='100%'>
+                      <PieChart>
+                        <Pie
+                          data={investmentsStats.portfolioComposition.map(
+                            (item: any) => ({
+                              ...item,
+                              name:
+                                item.type === 'deposit'
+                                  ? 'Депозиты'
+                                  : item.type === 'security'
+                                    ? 'Ценные бумаги'
+                                    : 'Недвижимость',
+                              fill:
+                                item.type === 'deposit'
+                                  ? '#3b82f6'
+                                  : item.type === 'security'
+                                    ? '#8b5cf6'
+                                    : '#f59e0b',
+                            }),
+                          )}
+                          cx='50%'
+                          cy='50%'
+                          innerRadius={60}
+                          outerRadius={100}
+                          dataKey='percentage'
+                        ></Pie>
+                        <Tooltip
+                          formatter={(
+                            value: number,
+                            name: string,
+                            props: any,
+                          ) => [
+                            `${value.toFixed(1)}% (${formatCurrency(props.payload.amount)})`,
+                            name,
+                          ]}
+                        />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className='flex h-full items-center justify-center text-center'>
+                      <p className='text-muted-foreground'>
+                        Нет данных об инвестициях
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Динамика операций */}
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <CardTitle>Динамика операций</CardTitle>
+                  <CardDescription>
+                    Депозиты, снятия и капитализация
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className='h-[300px]'>
+                  {isInvestmentsStatsLoading ? (
+                    <div className='flex h-full items-center justify-center'>
+                      <Skeleton className='h-[250px] w-full rounded' />
+                    </div>
+                  ) : investmentsStats?.operationsDynamics?.length > 0 ? (
+                    <ResponsiveContainer width='100%' height='100%'>
+                      <BarChart data={investmentsStats.operationsDynamics}>
+                        <CartesianGrid strokeDasharray='3 3' />
+                        <XAxis
+                          dataKey='month'
+                          tickFormatter={value => {
+                            const [year, month] = value.split('-')
+                            return `${month}/${year.slice(-2)}`
+                          }}
+                        />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value: number, name: string) => [
+                            formatCurrency(value),
+                            name === 'deposit'
+                              ? 'Депозиты'
+                              : name === 'withdrawal'
+                                ? 'Снятия'
+                                : 'Капитализация',
+                          ]}
+                          labelFormatter={label => {
+                            const [year, month] = label.split('-')
+                            const date = new Date(
+                              parseInt(year),
+                              parseInt(month) - 1,
+                            )
+                            return format(date, 'MMMM yyyy', { locale: ru })
+                          }}
+                        />
+                        <Legend
+                          formatter={value =>
+                            value === 'deposit'
+                              ? 'Депозиты'
+                              : value === 'withdrawal'
+                                ? 'Снятия'
+                                : 'Капитализация'
+                          }
+                        />
+                        <Bar dataKey='deposit' fill='#22c55e' />
+                        <Bar dataKey='withdrawal' fill='#ef4444' />
+                        <Bar dataKey='capitalization' fill='#3b82f6' />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className='flex h-full items-center justify-center text-center'>
+                      <p className='text-muted-foreground'>
+                        Нет данных об операциях
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Распределение доходности */}
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <CardTitle>Распределение по доходности</CardTitle>
+                  <CardDescription>
+                    Количество инвестиций в диапазонах
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className='h-[300px]'>
+                  {isInvestmentsStatsLoading ? (
+                    <div className='flex h-full items-center justify-center'>
+                      <Skeleton className='h-[250px] w-full rounded' />
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width='100%' height='100%'>
+                      <BarChart
+                        data={[
+                          {
+                            range: 'Убыток',
+                            count:
+                              investmentsStats?.returnDistribution?.negative ||
+                              0,
+                            fill: '#ef4444',
+                          },
+                          {
+                            range: '0-5%',
+                            count:
+                              investmentsStats?.returnDistribution?.['0-5'] ||
+                              0,
+                            fill: '#f97316',
+                          },
+                          {
+                            range: '5-10%',
+                            count:
+                              investmentsStats?.returnDistribution?.['5-10'] ||
+                              0,
+                            fill: '#eab308',
+                          },
+                          {
+                            range: '10-20%',
+                            count:
+                              investmentsStats?.returnDistribution?.['10-20'] ||
+                              0,
+                            fill: '#84cc16',
+                          },
+                          {
+                            range: '20%+',
+                            count:
+                              investmentsStats?.returnDistribution?.['20+'] ||
+                              0,
+                            fill: '#22c55e',
+                          },
+                        ]}
+                      >
+                        <CartesianGrid strokeDasharray='3 3' />
+                        <XAxis dataKey='range' />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value: number) => [
+                            value,
+                            'Количество инвестиций',
+                          ]}
+                        />
+                        <Bar dataKey='count'>
+                          {investmentsStats?.returnDistribution &&
+                            Object.entries(
+                              investmentsStats.returnDistribution,
+                            ).map((_, index) => <Cell key={`cell-${index}`} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Топ инвестиции */}
+              <Card className='transition-all duration-300 hover:shadow-md'>
+                <CardHeader>
+                  <CardTitle>Топ инвестиции по доходности</CardTitle>
+                  <CardDescription>Самые прибыльные инвестиции</CardDescription>
+                </CardHeader>
+                <CardContent className='h-[300px] overflow-y-auto'>
+                  {isInvestmentsStatsLoading ? (
+                    <div className='space-y-3'>
+                      {[...Array(5)].map((_, i) => (
+                        <Skeleton key={i} className='h-16 w-full rounded' />
+                      ))}
+                    </div>
+                  ) : investmentsStats?.topPerformers?.length > 0 ? (
+                    <div className='space-y-3'>
+                      {investmentsStats.topPerformers.map(
+                        (investment: any, index: number) => (
+                          <div
+                            key={investment.id}
+                            className='hover:bg-muted/50 rounded-lg border p-3 transition-colors'
+                          >
+                            <div className='mb-2 flex items-center justify-between'>
+                              <div className='flex items-center gap-2'>
+                                <span className='bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium'>
+                                  {index + 1}
+                                </span>
+                                <span className='text-sm font-medium'>
+                                  {investment.name}
+                                </span>
+                              </div>
+                              <span
+                                className={`text-sm font-bold ${
+                                  investment.return >= 0
+                                    ? 'text-green-600'
+                                    : 'text-red-600'
+                                }`}
+                              >
+                                {investment.return >= 0 ? '+' : ''}
+                                {Math.round(investment.return)}%
+                              </span>
+                            </div>
+                            <div className='text-muted-foreground flex justify-between text-xs'>
+                              <span>{formatCurrency(investment.amount)}</span>
+                              <span
+                                className={
+                                  investment.profit >= 0
+                                    ? 'text-green-600'
+                                    : 'text-red-600'
+                                }
+                              >
+                                {investment.profit >= 0 ? '+' : ''}
+                                {formatCurrency(investment.profit)}
+                              </span>
+                            </div>
+                            <div className='mt-1 flex items-center gap-1'>
+                              <span className='bg-muted rounded-full px-2 py-1 text-xs'>
+                                {investment.type === 'deposit'
+                                  ? 'Депозит'
+                                  : investment.type === 'security'
+                                    ? 'Ценная бумага'
+                                    : 'Недвижимость'}
+                              </span>
+                            </div>
+                          </div>
                         ),
                       )}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    </div>
+                  ) : (
+                    <div className='flex h-full items-center justify-center text-center'>
+                      <p className='text-muted-foreground'>
+                        Нет данных об инвестициях
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </Layout>
     </SubscriptionRouteGuard>
   )

@@ -64,7 +64,7 @@ const getPaymentById = async (id: number): Promise<PaymentResponse> => {
 
 // Создание платежного намерения (мок)
 const createPaymentIntent = async (
-  paymentData: PaymentData,
+  _paymentData: PaymentData,
 ): Promise<PaymentIntentResponse> => {
   // В реальном API здесь был бы запрос к серверу
   // Для мока возвращаем фиктивные данные

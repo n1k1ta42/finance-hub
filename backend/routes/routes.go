@@ -21,6 +21,11 @@ func SetupRoutes(app *fiber.App, config *config.Config) {
 	notificationController := controllers.NewNotificationController()
 	publicController := controllers.NewPublicController()
 	reviewController := controllers.NewReviewController()
+	projectController := controllers.NewProjectController()
+	investmentController := controllers.NewInvestmentController()
+	projectPaymentController := controllers.NewProjectPaymentController()
+	investmentOperationController := controllers.NewInvestmentOperationController()
+	changeLogController := controllers.NewChangeLogController()
 
 	// Группа API v1
 	api := app.Group("/api/v1")
@@ -141,4 +146,47 @@ func SetupRoutes(app *fiber.App, config *config.Config) {
 	// Экспорт статистики (доступен только для Pro)
 	statsExport := stats.Group("/export", middlewares.RequiresPlan(models.Pro))
 	statsExport.Get("/pdf", statsController.ExportStatsToPDF)
+
+	// Проекты
+	projects := subscribedOnly.Group("/projects")
+	projects.Get("/", projectController.GetAll)
+	projects.Get("/stats", projectController.Stats)
+	projects.Get(":id", projectController.GetByID)
+	projects.Post("/", projectController.Create)
+	projects.Put(":id", projectController.Update)
+	projects.Delete(":id/archive", projectController.Archive)
+	projects.Put(":id/unarchive", projectController.Unarchive)
+	projects.Put(":id/complete", projectController.Complete)
+	projects.Get(":id/analytics", projectController.Analytics)
+
+	// Операции по проектам
+	projectPayments := projects.Group(":projectId/payments")
+	projectPayments.Get("/", projectPaymentController.GetAll)
+	projectPayments.Get(":id", projectPaymentController.GetByID)
+	projectPayments.Post("/", projectPaymentController.Create)
+	projectPayments.Delete(":id", projectPaymentController.Delete)
+
+	// Инвестиции
+	investments := subscribedOnly.Group("/investments")
+	investments.Get("/", investmentController.GetAll)
+	investments.Get("/stats", investmentController.Stats)
+	investments.Get(":id", investmentController.GetByID)
+	investments.Post("/", investmentController.Create)
+	investments.Put(":id", investmentController.Update)
+	investments.Delete(":id/archive", investmentController.Archive)
+	investments.Put(":id/unarchive", investmentController.Unarchive)
+	investments.Put(":id/complete", investmentController.Complete)
+	investments.Get(":id/analytics", investmentController.Analytics)
+
+	// Операции по инвестициям
+	investmentOps := investments.Group(":investmentId/operations")
+	investmentOps.Get("/", investmentOperationController.GetAll)
+	investmentOps.Get(":id", investmentOperationController.GetByID)
+	investmentOps.Post("/", investmentOperationController.Create)
+	investmentOps.Delete(":id", investmentOperationController.Delete)
+
+	// История изменений (доступна только для Premium и Pro)
+	changeLogs := subscribedOnly.Group("/change-logs", middlewares.RequiresPlan(models.Premium))
+	changeLogs.Get("/", changeLogController.GetUserHistory)
+	changeLogs.Get("/:entityType/:entityId", changeLogController.GetEntityHistory)
 }

@@ -1,5 +1,7 @@
 import { useMe } from '@/api/auth'
 import { useCategories } from '@/api/categories'
+import { useInvestmentsStats } from '@/api/investments'
+import { useProjectsStats } from '@/api/projects'
 import {
   useBalanceSummary,
   useCategorySummary,
@@ -52,10 +54,12 @@ import {
   BarChart3,
   Calendar as CalendarIcon,
   ChevronDown,
+  FolderOpen,
   List,
   ListOrdered,
   Plus,
   RefreshCcw,
+  TrendingUp,
   Wallet,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -180,6 +184,11 @@ function Dashboard() {
         enabled: canAccess('premium'),
       },
     )
+
+  const { data: projectsStats, isLoading: isProjectsStatsLoading } =
+    useProjectsStats()
+  const { data: investmentsStats, isLoading: isInvestmentsStatsLoading } =
+    useInvestmentsStats()
 
   const createTransaction = useCreateTransaction()
 
@@ -498,7 +507,7 @@ function Dashboard() {
       </div>
 
       {/* Карточки с основной информацией */}
-      <div className='animate-in fade-in-10 slide-in-from-bottom-5 grid gap-4 duration-500 md:grid-cols-2 lg:grid-cols-3'>
+      <div className='animate-in fade-in-10 slide-in-from-bottom-5 grid gap-4 duration-500 md:grid-cols-2 lg:grid-cols-5'>
         <Card className='transition-all duration-200 hover:scale-[1.01] hover:shadow-md'>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
             <CardTitle className='text-sm font-medium'>Баланс</CardTitle>
@@ -552,6 +561,44 @@ function Dashboard() {
             )}
             <p className='text-muted-foreground mt-1 text-xs'>
               За период {formatDateRange(dateRange)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className='transition-all duration-200 hover:scale-[1.01] hover:shadow-md'>
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+            <CardTitle className='text-sm font-medium'>Проекты</CardTitle>
+            <FolderOpen className='h-4 w-4 text-blue-500' />
+          </CardHeader>
+          <CardContent>
+            {isProjectsStatsLoading ? (
+              <Skeleton className='h-8 w-full' />
+            ) : (
+              <div className='text-2xl font-bold text-blue-500'>
+                {projectsStats?.data?.totalProjects || 0}
+              </div>
+            )}
+            <p className='text-muted-foreground mt-1 text-xs'>
+              Активных: {projectsStats?.data?.activeProjects || 0}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className='transition-all duration-200 hover:scale-[1.01] hover:shadow-md'>
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+            <CardTitle className='text-sm font-medium'>Инвестиции</CardTitle>
+            <TrendingUp className='h-4 w-4 text-purple-500' />
+          </CardHeader>
+          <CardContent>
+            {isInvestmentsStatsLoading ? (
+              <Skeleton className='h-8 w-full' />
+            ) : (
+              <div className='text-2xl font-bold text-purple-500'>
+                {formatCurrency(investmentsStats?.data?.totalAmount || 0)}
+              </div>
+            )}
+            <p className='text-muted-foreground mt-1 text-xs'>
+              Активных: {investmentsStats?.data?.activeInvestments || 0}
             </p>
           </CardContent>
         </Card>

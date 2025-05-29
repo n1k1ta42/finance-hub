@@ -24,6 +24,11 @@ func MigrateDB() {
 		&models.Review{},
 		&models.ResetToken{},
 		&models.RefreshToken{},
+		&models.Project{},
+		&models.ProjectPayment{},
+		&models.Investment{},
+		&models.InvestmentOperation{},
+		&models.ChangeLog{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}

@@ -18,12 +18,15 @@ import {
   ArrowRightLeft,
   Bell,
   ChartColumn,
+  ChartNoAxesCombined,
   Component,
   CreditCard,
   Github,
+  History,
   Landmark,
   LayoutDashboard,
   LifeBuoy,
+  Presentation,
   Send,
   Users,
 } from 'lucide-react'
@@ -56,9 +59,33 @@ const data = {
       items: [],
     },
     {
+      title: 'Проекты',
+      url: '/projects',
+      icon: Presentation,
+      items: [],
+    },
+    {
+      title: 'Инвестиции',
+      url: '/investments',
+      icon: ChartNoAxesCombined,
+      items: [],
+    },
+    {
+      title: 'Бюджеты',
+      url: '/budgets',
+      icon: Landmark,
+      items: [],
+    },
+    {
       title: 'Статистика',
       url: '/statistics',
       icon: ChartColumn,
+      items: [],
+    },
+    {
+      title: 'История',
+      url: '/history',
+      icon: History,
       items: [],
     },
     {
@@ -117,7 +144,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Если данные о подписке еще загружаются, показываем базовые пункты меню
   const mainNavItems = React.useMemo(() => {
-    if (isLoading) return data.navMain.filter(item => item.url !== '/budgets')
+    if (isLoading)
+      return data.navMain.filter(
+        item => item.url !== '/budgets' && item.url !== '/history',
+      )
 
     let items = data.navMain.filter(item => {
       // Бюджеты доступны только для Premium и Pro
@@ -125,6 +155,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       // Расширенная статистика доступна только для Premium и Pro
       if (item.url === '/statistics' && !canAccess('premium')) return false
+
+      // История изменений доступна только для Premium и Pro
+      if (item.url === '/history' && !canAccess('premium')) return false
 
       return true
     })
