@@ -53,12 +53,6 @@ const data = {
       items: [],
     },
     {
-      title: 'Бюджеты',
-      url: '/budgets',
-      icon: Landmark,
-      items: [],
-    },
-    {
       title: 'Проекты',
       url: '/projects',
       icon: Presentation,
