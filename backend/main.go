@@ -15,6 +15,7 @@ import (
 	"github.com/nikitagorchakov/finance-hub/backend/models"
 	"github.com/nikitagorchakov/finance-hub/backend/routes"
 	"github.com/nikitagorchakov/finance-hub/backend/telegram"
+	"github.com/nikitagorchakov/finance-hub/backend/utils"
 )
 
 func main() {
@@ -32,8 +33,15 @@ func main() {
 		db.SeedDefaultData()
 	}
 
-	// Инициализируем и запускаем Telegram-бота
-	initTelegramBot()
+	// Запускаем Telegram бот в отдельной горутине
+	go func() {
+		telegramService, err := telegram.NewService()
+		if err != nil {
+			log.Printf("Ошибка инициализации Telegram бота: %v", err)
+			return
+		}
+		telegramService.Start()
+	}()
 
 	// Инициализируем приложение Fiber
 	app := fiber.New(fiber.Config{
@@ -74,25 +82,15 @@ func main() {
 	// Запускаем обработчик recurring транзакций
 	go startRecurringProcessor()
 
+	// Запускаем background процесс для проверки превышения бюджетов
+	go startBudgetThresholdChecker()
+
 	// Запуск сервера
 	port := fmt.Sprintf(":%s", cfg.Port)
 	log.Printf("Server starting on port %s", cfg.Port)
 	if err := app.Listen(port); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
-}
-
-// initTelegramBot инициализирует и запускает клиентский Telegram-бот
-func initTelegramBot() {
-	botService, err := telegram.GetInstance()
-	if err != nil {
-		log.Printf("Ошибка инициализации клиентского Telegram-бота: %v", err)
-		log.Println("Приложение продолжит работу без клиентского Telegram-бота")
-		return
-	}
-	
-	botService.Start()
-	log.Println("Клиентский Telegram бот успешно инициализирован")
 }
 
 // getAllowedOrigins возвращает разрешенные домены в зависимости от окружения
@@ -171,4 +169,39 @@ func processRecurringTransactions() {
 	if processedCount > 0 {
 		log.Printf("Обработано %d регулярных транзакций", processedCount)
 	}
+}
+
+// startBudgetThresholdChecker запускает периодическую проверку превышения бюджетов
+func startBudgetThresholdChecker() {
+	ticker := time.NewTicker(1 * time.Hour) // Проверяем каждый час
+	defer ticker.Stop()
+
+	log.Println("Запущен обработчик проверки превышения бюджетов")
+
+	for {
+		select {
+		case <-ticker.C:
+			checkBudgetThresholds()
+		}
+	}
+}
+
+// checkBudgetThresholds проверяет превышение бюджетов
+func checkBudgetThresholds() {
+	log.Println("Проверка превышения бюджетов...")
+	
+	var users []models.User
+	
+	if err := db.DB.Find(&users).Error; err != nil {
+		log.Printf("Ошибка получения пользователей: %v", err)
+		return
+	}
+
+	for _, user := range users {
+		if err := utils.CheckBudgetThresholds(user.ID); err != nil {
+			log.Printf("Ошибка проверки бюджетов пользователя %d: %v", user.ID, err)
+		}
+	}
+	
+	log.Println("Проверка превышения бюджетов завершена")
 }

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -724,7 +725,7 @@ func logError(err error, message string) {
 	fmt.Printf("[ERROR] %s: %v\n", message, err)
 }
 
-// updateBudgetSpent обновляет поле Spent в бюджетах на основе транзакций
+// updateBudgetSpent обновляет сумму потраченных средств в бюджете
 func (tc *TransactionController) updateBudgetSpent(categoryID uint, date time.Time, userID uint) error {
 	// Находим бюджеты, соответствующие категории и дате
 	var budgets []models.Budget
@@ -760,6 +761,12 @@ func (tc *TransactionController) updateBudgetSpent(categoryID uint, date time.Ti
 		// Обновляем поле Spent в бюджете
 		if err := db.DB.Model(&budget).Update("spent", sum).Error; err != nil {
 			return err
+		}
+
+		// После обновления бюджета проверяем превышение пороговых значений
+		budget.Spent = sum // Обновляем локальное значение для проверки
+		if err := utils.CheckBudgetThresholds(userID); err != nil {
+			log.Printf("Ошибка проверки превышения бюджетов для пользователя %d: %v", userID, err)
 		}
 	}
 

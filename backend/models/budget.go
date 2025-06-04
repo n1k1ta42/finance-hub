@@ -42,3 +42,30 @@ type BudgetDTO struct {
 	EndDate    time.Time    `json:"endDate" validate:"required,gtfield=StartDate"`
 	CategoryID *uint        `json:"categoryId"`
 }
+
+// GetUsagePercentage возвращает процент использования бюджета
+func (b *Budget) GetUsagePercentage() float64 {
+	if b.Amount == 0 {
+		return 0
+	}
+	return (b.Spent / b.Amount) * 100
+}
+
+// HasExceededThreshold проверяет превышение указанного порога в процентах
+func (b *Budget) HasExceededThreshold(threshold float64) bool {
+	return b.GetUsagePercentage() >= threshold
+}
+
+// GetThresholdStatus возвращает статус превышения пороговых значений
+func (b *Budget) GetThresholdStatus() []float64 {
+	var exceeded []float64
+	thresholds := []float64{80, 100, 120}
+	
+	for _, threshold := range thresholds {
+		if b.HasExceededThreshold(threshold) {
+			exceeded = append(exceeded, threshold)
+		}
+	}
+	
+	return exceeded
+}

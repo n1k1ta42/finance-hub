@@ -15,6 +15,8 @@ const (
 	NotificationPayment NotificationType = "payment"
 	// NotificationSubscription уведомление о подписке
 	NotificationSubscription NotificationType = "subscription"
+	// NotificationBudget уведомление о бюджете
+	NotificationBudget NotificationType = "budget"
 	// NotificationSystem системное уведомление
 	NotificationSystem NotificationType = "system"
 	// NotificationSecurity уведомление безопасности
@@ -47,7 +49,7 @@ type Notification struct {
 // NotificationCreate структура для создания уведомления
 type NotificationCreate struct {
 	UserID     uint                  `json:"userId" validate:"required"`
-	Type       NotificationType      `json:"type" validate:"required,oneof=payment subscription system security"`
+	Type       NotificationType      `json:"type" validate:"required,oneof=payment subscription budget system security"`
 	Title      string                `json:"title" validate:"required"`
 	Message    string                `json:"message" validate:"required"`
 	Importance NotificationImportance `json:"importance" validate:"omitempty,oneof=low normal high"`
