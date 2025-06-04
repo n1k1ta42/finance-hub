@@ -27,6 +27,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   Presentation,
+  Repeat,
   Send,
   Users,
 } from 'lucide-react'
@@ -68,6 +69,12 @@ const data = {
       title: 'Бюджеты',
       url: '/budgets',
       icon: Landmark,
+      items: [],
+    },
+    {
+      title: 'Регулярные платежи',
+      url: '/recurring',
+      icon: Repeat,
       items: [],
     },
     {
@@ -146,6 +153,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     let items = data.navMain.filter(item => {
       // Бюджеты доступны только для Premium и Pro
       if (item.url === '/budgets' && !canAccess('premium')) return false
+
+      // Регулярные платежи доступны только для Premium и Pro
+      if (item.url === '/recurring' && !canAccess('premium')) return false
 
       // Расширенная статистика доступна только для Premium и Pro
       if (item.url === '/statistics' && !canAccess('premium')) return false
