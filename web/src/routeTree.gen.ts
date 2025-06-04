@@ -25,6 +25,7 @@ import { Route as AuthenticatedTransactionsImport } from './routes/_authenticate
 import { Route as AuthenticatedSubscriptionsImport } from './routes/_authenticated/subscriptions'
 import { Route as AuthenticatedStatisticsImport } from './routes/_authenticated/statistics'
 import { Route as AuthenticatedReviewsImport } from './routes/_authenticated/reviews'
+import { Route as AuthenticatedRecurringImport } from './routes/_authenticated/recurring'
 import { Route as AuthenticatedProfileImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPaymentsImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedNotificationsImport } from './routes/_authenticated/notifications'
@@ -131,6 +132,12 @@ const AuthenticatedStatisticsRoute = AuthenticatedStatisticsImport.update({
 const AuthenticatedReviewsRoute = AuthenticatedReviewsImport.update({
   id: '/reviews',
   path: '/reviews',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+
+const AuthenticatedRecurringRoute = AuthenticatedRecurringImport.update({
+  id: '/recurring',
+  path: '/recurring',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 
@@ -390,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileImport
       parentRoute: typeof AuthenticatedImport
     }
+    '/_authenticated/recurring': {
+      id: '/_authenticated/recurring'
+      path: '/recurring'
+      fullPath: '/recurring'
+      preLoaderRoute: typeof AuthenticatedRecurringImport
+      parentRoute: typeof AuthenticatedImport
+    }
     '/_authenticated/reviews': {
       id: '/_authenticated/reviews'
       path: '/reviews'
@@ -535,6 +549,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedRecurringRoute: typeof AuthenticatedRecurringRoute
   AuthenticatedReviewsRoute: typeof AuthenticatedReviewsRoute
   AuthenticatedStatisticsRoute: typeof AuthenticatedStatisticsRoute
   AuthenticatedSubscriptionsRoute: typeof AuthenticatedSubscriptionsRoute
@@ -563,6 +578,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedRecurringRoute: AuthenticatedRecurringRoute,
   AuthenticatedReviewsRoute: AuthenticatedReviewsRoute,
   AuthenticatedStatisticsRoute: AuthenticatedStatisticsRoute,
   AuthenticatedSubscriptionsRoute: AuthenticatedSubscriptionsRoute,
@@ -608,6 +624,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/recurring': typeof AuthenticatedRecurringRoute
   '/reviews': typeof AuthenticatedReviewsRoute
   '/statistics': typeof AuthenticatedStatisticsRoute
   '/subscriptions': typeof AuthenticatedSubscriptionsRoute
@@ -646,6 +663,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/recurring': typeof AuthenticatedRecurringRoute
   '/reviews': typeof AuthenticatedReviewsRoute
   '/statistics': typeof AuthenticatedStatisticsRoute
   '/subscriptions': typeof AuthenticatedSubscriptionsRoute
@@ -685,6 +703,7 @@ export interface FileRoutesById {
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/recurring': typeof AuthenticatedRecurringRoute
   '/_authenticated/reviews': typeof AuthenticatedReviewsRoute
   '/_authenticated/statistics': typeof AuthenticatedStatisticsRoute
   '/_authenticated/subscriptions': typeof AuthenticatedSubscriptionsRoute
@@ -725,6 +744,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/payments'
     | '/profile'
+    | '/recurring'
     | '/reviews'
     | '/statistics'
     | '/subscriptions'
@@ -762,6 +782,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/payments'
     | '/profile'
+    | '/recurring'
     | '/reviews'
     | '/statistics'
     | '/subscriptions'
@@ -799,6 +820,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notifications'
     | '/_authenticated/payments'
     | '/_authenticated/profile'
+    | '/_authenticated/recurring'
     | '/_authenticated/reviews'
     | '/_authenticated/statistics'
     | '/_authenticated/subscriptions'
@@ -890,6 +912,7 @@ export const routeTree = rootRoute
         "/_authenticated/notifications",
         "/_authenticated/payments",
         "/_authenticated/profile",
+        "/_authenticated/recurring",
         "/_authenticated/reviews",
         "/_authenticated/statistics",
         "/_authenticated/subscriptions",
@@ -948,6 +971,10 @@ export const routeTree = rootRoute
     },
     "/_authenticated/profile": {
       "filePath": "_authenticated/profile.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/recurring": {
+      "filePath": "_authenticated/recurring.tsx",
       "parent": "/_authenticated"
     },
     "/_authenticated/reviews": {
