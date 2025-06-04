@@ -567,4 +567,24 @@ func (b *Bot) handleCancellation(chatID int64, state *UserState) {
 	
 	// Сбрасываем состояние
 	state.Stage = StageNone
+}
+
+// SendNotificationMessage отправляет уведомление пользователю по chat ID
+func (b *Bot) SendNotificationMessage(userChatID string, text string) error {
+	if userChatID == "" {
+		return nil // Если chat ID не задан, не отправляем
+	}
+
+	chatID, err := strconv.ParseInt(userChatID, 10, 64)
+	if err != nil {
+		return fmt.Errorf("неверный chat ID: %w", err)
+	}
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	_, err = b.api.Send(msg)
+	if err != nil {
+		return fmt.Errorf("ошибка отправки уведомления: %w", err)
+	}
+
+	return nil
 } 

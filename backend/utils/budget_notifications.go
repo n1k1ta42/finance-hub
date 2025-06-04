@@ -6,6 +6,7 @@ import (
 
 	"github.com/nikitagorchakov/finance-hub/backend/db"
 	"github.com/nikitagorchakov/finance-hub/backend/models"
+	"github.com/nikitagorchakov/finance-hub/backend/telegram"
 )
 
 // CheckBudgetThresholds проверяет превышение пороговых значений для всех бюджетов пользователя
@@ -42,10 +43,28 @@ func checkSingleBudgetThresholds(budget *models.Budget) error {
 			return fmt.Errorf("ошибка создания уведомления: %w", err)
 		}
 
-		// Отправляем Telegram уведомление если включено
-		telegramMessage := formatTelegramBudgetMessage(budget, threshold)
-		if err := SendTelegramMessage(telegramMessage); err != nil {
-			log.Printf("Ошибка отправки Telegram уведомления: %v", err)
+		// Получаем пользователя для отправки Telegram уведомления
+		var user models.User
+		if err := db.DB.First(&user, budget.UserID).Error; err != nil {
+			log.Printf("Ошибка получения пользователя %d: %v", budget.UserID, err)
+			continue
+		}
+
+		// Отправляем Telegram уведомление только если у пользователя настроен chat ID
+		if user.TelegramChatID != "" {
+			telegramMessage := formatTelegramBudgetMessage(budget, threshold)
+			
+			// Получаем экземпляр клиентского бота
+			telegramService, err := telegram.GetInstance()
+			if err != nil {
+				log.Printf("Ошибка получения Telegram сервиса: %v", err)
+			} else {
+				if err := telegramService.SendNotification(user.TelegramChatID, telegramMessage); err != nil {
+					log.Printf("Ошибка отправки Telegram уведомления пользователю %d: %v", user.ID, err)
+				} else {
+					log.Printf("Отправлено Telegram уведомление пользователю %d о превышении бюджета %s на %.0f%%", user.ID, budget.Name, threshold)
+				}
+			}
 		}
 
 		log.Printf("Отправлено уведомление о превышении бюджета %s на %.0f%%", budget.Name, threshold)

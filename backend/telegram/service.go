@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"fmt"
 	"log"
 	"sync"
 )
@@ -62,4 +63,12 @@ func (s *Service) Start() {
 // GetInstance возвращает экземпляр сервиса бота
 func GetInstance() (*Service, error) {
 	return NewService()
+}
+
+// SendNotification отправляет уведомление пользователю через клиентский бот
+func (s *Service) SendNotification(userChatID string, message string) error {
+	if s.bot == nil {
+		return fmt.Errorf("бот не инициализирован")
+	}
+	return s.bot.SendNotificationMessage(userChatID, message)
 } 
