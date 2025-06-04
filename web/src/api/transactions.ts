@@ -1,6 +1,8 @@
 import api from '@/lib/api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+export type TransactionType = 'income' | 'expense'
+
 export interface Transaction {
   id: number
   amount: number
@@ -10,10 +12,37 @@ export interface Transaction {
   category: {
     id: number
     name: string
-    type: 'expense' | 'income'
+    type: TransactionType
     color: string
     icon: string
   }
+  userId: number
+  recurringRuleId?: number
+  isRecurring: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type RecurringFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
+
+export interface RecurringRule {
+  id: number
+  userId: number
+  amount: number
+  description: string
+  categoryId: number
+  category: {
+    id: number
+    name: string
+    type: TransactionType
+    color: string
+    icon: string
+  }
+  frequency: RecurringFrequency
+  startDate: string
+  endDate?: string
+  nextExecuteDate: string
+  isActive: boolean
   createdAt: string
   updatedAt: string
 }
@@ -23,6 +52,18 @@ export interface TransactionFormData {
   description: string
   date: string
   categoryId: number
+  createRecurring?: boolean
+  frequency?: RecurringFrequency
+  endDate?: string
+}
+
+export interface RecurringRuleFormData {
+  amount: number
+  description: string
+  categoryId: number
+  frequency: RecurringFrequency
+  startDate: string
+  endDate?: string
 }
 
 export interface BulkTransactionFormData {
@@ -365,5 +406,156 @@ export const useExportTransactionsToCSV = () => {
 export const useExportTransactionsToExcel = () => {
   return useMutation({
     mutationFn: exportTransactionsToExcel,
+  })
+}
+
+// Recurring Rules API functions
+
+interface RecurringRuleResponse {
+  status: string
+  data: RecurringRule
+  message?: string
+}
+
+interface RecurringRulesResponse {
+  status: string
+  data: RecurringRule[]
+  message?: string
+}
+
+const getRecurringRules = async (): Promise<RecurringRulesResponse> => {
+  try {
+    const response = await api.get('/recurring')
+    return response.data
+  } catch (error) {
+    console.error('Ошибка при получении регулярных платежей:', error)
+    throw error
+  }
+}
+
+const getRecurringRuleById = async (
+  id: number,
+): Promise<RecurringRuleResponse> => {
+  try {
+    const response = await api.get(`/recurring/${id}`)
+    return response.data
+  } catch (error) {
+    console.error(`Ошибка при получении регулярного платежа с ID ${id}:`, error)
+    throw error
+  }
+}
+
+const createRecurringRule = async (
+  data: RecurringRuleFormData,
+): Promise<RecurringRuleResponse> => {
+  try {
+    const response = await api.post('/recurring', data)
+    return response.data
+  } catch (error) {
+    console.error('Ошибка при создании регулярного платежа:', error)
+    throw error
+  }
+}
+
+const updateRecurringRule = async (
+  id: number,
+  data: RecurringRuleFormData,
+): Promise<RecurringRuleResponse> => {
+  try {
+    const response = await api.put(`/recurring/${id}`, data)
+    return response.data
+  } catch (error) {
+    console.error(
+      `Ошибка при обновлении регулярного платежа с ID ${id}:`,
+      error,
+    )
+    throw error
+  }
+}
+
+const toggleRecurringRule = async (
+  id: number,
+): Promise<RecurringRuleResponse> => {
+  try {
+    const response = await api.put(`/recurring/${id}/toggle`)
+    return response.data
+  } catch (error) {
+    console.error(
+      `Ошибка при изменении статуса регулярного платежа с ID ${id}:`,
+      error,
+    )
+    throw error
+  }
+}
+
+const deleteRecurringRule = async (id: number): Promise<void> => {
+  try {
+    await api.delete(`/recurring/${id}`)
+  } catch (error) {
+    console.error(`Ошибка при удалении регулярного платежа с ID ${id}:`, error)
+    throw error
+  }
+}
+
+// React Query hooks for recurring rules
+
+export const useRecurringRules = () => {
+  return useQuery({
+    queryKey: ['recurring-rules'],
+    queryFn: getRecurringRules,
+    select: data => data.data,
+  })
+}
+
+export const useRecurringRule = (id: number) => {
+  return useQuery({
+    queryKey: ['recurring-rule', id],
+    queryFn: () => getRecurringRuleById(id),
+    select: data => data.data,
+  })
+}
+
+export const useCreateRecurringRule = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: createRecurringRule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring-rules'] })
+    },
+  })
+}
+
+export const useUpdateRecurringRule = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: RecurringRuleFormData }) =>
+      updateRecurringRule(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring-rules'] })
+    },
+  })
+}
+
+export const useToggleRecurringRule = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: toggleRecurringRule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring-rules'] })
+    },
+  })
+}
+
+export const useDeleteRecurringRule = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteRecurringRule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring-rules'] })
+    },
   })
 }

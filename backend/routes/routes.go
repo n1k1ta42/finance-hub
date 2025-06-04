@@ -14,6 +14,7 @@ func SetupRoutes(app *fiber.App, config *config.Config) {
 	authController := controllers.NewAuthController(config)
 	categoryController := controllers.NewCategoryController()
 	transactionController := controllers.NewTransactionController()
+	recurringController := controllers.NewRecurringController()
 	budgetController := controllers.NewBudgetController()
 	statsController := controllers.NewStatsController()
 	subscriptionController := controllers.NewSubscriptionController()
@@ -122,6 +123,18 @@ func SetupRoutes(app *fiber.App, config *config.Config) {
 	exportsGroup := transactions.Group("/export", middlewares.RequiresPlan(models.Pro))
 	exportsGroup.Get("/csv", transactionController.ExportTransactionsToCSV)
 	exportsGroup.Get("/excel", transactionController.ExportTransactionsToExcel)
+
+	// Регулярные платежи (доступны только для Premium и Pro)
+	recurring := subscribedOnly.Group("/recurring", middlewares.RequiresPlan(models.Premium))
+	recurring.Get("/", recurringController.GetAllRules)
+	recurring.Get("/:id", recurringController.GetRuleByID)
+	recurring.Post("/", recurringController.CreateRule)
+	recurring.Put("/:id", recurringController.UpdateRule)
+	recurring.Put("/:id/toggle", recurringController.ToggleRule)
+	recurring.Delete("/:id", recurringController.DeleteRule)
+
+	// Обработка регулярных транзакций (для cron/admin)
+	admin.Post("/process-recurring", recurringController.ProcessRecurringTransactions)
 
 	// Бюджеты (доступны только для Premium и Pro)
 	budgets := subscribedOnly.Group("/budgets")

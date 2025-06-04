@@ -33,7 +33,7 @@ func (sc *SubscriptionController) GetAllPlans(c *fiber.Ctx) error {
 			case models.Basic:
 				description = "Базовый план для личных финансов"
 			case models.Premium:
-				description = "Расширенный план с дополнительными возможностями"
+				description = "Расширенный план с бюджетированием и регулярными платежами"
 			case models.Pro:
 				description = "Профессиональный план без ограничений"
 			}

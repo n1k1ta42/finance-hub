@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -11,6 +12,7 @@ import (
 	"github.com/nikitagorchakov/finance-hub/backend/config"
 	"github.com/nikitagorchakov/finance-hub/backend/db"
 	"github.com/nikitagorchakov/finance-hub/backend/middlewares"
+	"github.com/nikitagorchakov/finance-hub/backend/models"
 	"github.com/nikitagorchakov/finance-hub/backend/routes"
 	"github.com/nikitagorchakov/finance-hub/backend/telegram"
 )
@@ -69,6 +71,9 @@ func main() {
 	// Настройка маршрутов
 	routes.SetupRoutes(app, cfg)
 
+	// Запускаем обработчик recurring транзакций
+	go startRecurringProcessor()
+
 	// Запуск сервера
 	port := fmt.Sprintf(":%s", cfg.Port)
 	log.Printf("Server starting on port %s", cfg.Port)
@@ -96,4 +101,74 @@ func getAllowedOrigins(cfg *config.Config) string {
 		return "http://localhost:3001"
 	}
 	return cfg.FrontendURL
+}
+
+// startRecurringProcessor запускает периодическую обработку recurring транзакций
+func startRecurringProcessor() {
+	ticker := time.NewTicker(1 * time.Hour) // Проверяем каждый час
+	defer ticker.Stop()
+
+	log.Println("Запущен обработчик регулярных транзакций")
+
+	for {
+		select {
+		case <-ticker.C:
+			processRecurringTransactions()
+		}
+	}
+}
+
+// processRecurringTransactions обрабатывает активные recurring правила
+func processRecurringTransactions() {
+	log.Println("Обработка регулярных транзакций...")
+	
+	now := time.Now()
+	var rules []models.RecurringRule
+	
+	if err := db.DB.Where("is_active = ? AND next_execute_date <= ?", true, now).
+		Preload("Category").
+		Find(&rules).Error; err != nil {
+		log.Printf("Ошибка получения recurring правил: %v", err)
+		return
+	}
+
+	processedCount := 0
+	for _, rule := range rules {
+		if rule.IsTimeToExecute() {
+			// Создаем транзакцию
+			transaction := models.Transaction{
+				Amount:          rule.Amount,
+				Description:     rule.Description,
+				Date:            rule.NextExecuteDate,
+				CategoryID:      rule.CategoryID,
+				UserID:          rule.UserID,
+				RecurringRuleID: &rule.ID,
+				IsRecurring:     true,
+			}
+
+			if err := db.DB.Create(&transaction).Error; err != nil {
+				log.Printf("Ошибка создания recurring транзакции: %v", err)
+				continue
+			}
+
+			// Обновляем следующую дату выполнения
+			rule.NextExecuteDate = rule.CalculateNextExecuteDate()
+			
+			// Проверяем, не истек ли срок действия правила
+			if rule.EndDate != nil && rule.NextExecuteDate.After(*rule.EndDate) {
+				rule.IsActive = false
+			}
+
+			if err := db.DB.Save(&rule).Error; err != nil {
+				log.Printf("Ошибка обновления recurring правила: %v", err)
+				continue
+			}
+
+			processedCount++
+		}
+	}
+
+	if processedCount > 0 {
+		log.Printf("Обработано %d регулярных транзакций", processedCount)
+	}
 }

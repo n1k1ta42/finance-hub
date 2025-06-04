@@ -204,6 +204,26 @@ func (tc *TransactionController) CreateTransaction(c *fiber.Ctx) error {
 		})
 	}
 
+	// Создаем регулярный платеж, если указан флаг
+	var recurringRule *models.RecurringRule
+	if input.CreateRecurring && input.Frequency != nil {
+		rule := models.RecurringRule{
+			UserID:          userID,
+			Amount:          input.Amount,
+			Description:     input.Description,
+			CategoryID:      input.CategoryID,
+			Frequency:       *input.Frequency,
+			StartDate:       normalizedDate,
+			EndDate:         input.EndDate,
+			NextExecuteDate: calculateNextDate(normalizedDate, *input.Frequency),
+			IsActive:        true,
+		}
+
+		if err := db.DB.Create(&rule).Error; err == nil {
+			recurringRule = &rule
+		}
+	}
+
 	// Обновляем поле Spent в соответствующих бюджетах
 	if err := tc.updateBudgetSpent(transaction.CategoryID, transaction.Date, userID); err != nil {
 		// Логируем ошибку, но не прерываем выполнение запроса
@@ -213,11 +233,34 @@ func (tc *TransactionController) CreateTransaction(c *fiber.Ctx) error {
 	// Загружаем связанную категорию для ответа
 	db.DB.Preload("Category").First(&transaction, transaction.ID)
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+	response := fiber.Map{
 		"status":  "success",
 		"message": "Транзакция успешно создана",
 		"data":    transaction,
-	})
+	}
+
+	if recurringRule != nil {
+		response["recurringRule"] = recurringRule
+		response["message"] = "Транзакция и регулярный платеж успешно созданы"
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(response)
+}
+
+// calculateNextDate вычисляет следующую дату выполнения
+func calculateNextDate(currentDate time.Time, frequency models.RecurringFrequency) time.Time {
+	switch frequency {
+	case models.RecurringDaily:
+		return currentDate.AddDate(0, 0, 1)
+	case models.RecurringWeekly:
+		return currentDate.AddDate(0, 0, 7)
+	case models.RecurringMonthly:
+		return currentDate.AddDate(0, 1, 0)
+	case models.RecurringYearly:
+		return currentDate.AddDate(1, 0, 0)
+	default:
+		return currentDate
+	}
 }
 
 // UpdateTransaction обновляет транзакцию

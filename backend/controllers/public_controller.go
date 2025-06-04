@@ -27,7 +27,7 @@ func (c *PublicController) GetSubscriptionPlans(ctx *fiber.Ctx) error {
 			case plan == models.Basic:
 				description = "Основные функции для учёта финансов"
 			case plan == models.Premium && period == models.MonthlySubscription:
-				description = "Расширенные функции для анализа и планирования"
+				description = "Расширенные функции: бюджетирование и регулярные платежи"
 			case plan == models.Premium && period == models.YearlySubscription:
 				description = "Расширенные функции со скидкой 20%"
 			case plan == models.Premium && period == models.LifetimeSubscription:

@@ -16,6 +16,7 @@ func MigrateDB() {
 	if err := DB.AutoMigrate(
 		&models.User{},
 		&models.Category{},
+		&models.RecurringRule{},
 		&models.Transaction{},
 		&models.Budget{},
 		&models.Subscription{},

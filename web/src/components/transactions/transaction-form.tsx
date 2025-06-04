@@ -1,10 +1,17 @@
 import type { Category } from '@/api/categories'
-import type { Transaction, TransactionFormData } from '@/api/transactions'
+import type {
+  RecurringFrequency,
+  Transaction,
+  TransactionFormData,
+} from '@/api/transactions'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -24,12 +31,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useSubscription } from '@/hooks/use-subscription'
 import { getCategoryIndicatorClasses } from '@/lib/category-utils'
 import { cn } from '@/lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format } from 'date-fns'
-import { CalendarIcon } from 'lucide-react'
-import { useEffect } from 'react'
+import { CalendarIcon, Repeat } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -42,6 +50,9 @@ const schema = z.object({
   categoryId: z.number({
     required_error: 'Пожалуйста, выберите категорию',
   }),
+  createRecurring: z.boolean(),
+  frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']).optional(),
+  endDate: z.date().optional(),
 })
 
 interface TransactionFormProps {
@@ -57,6 +68,12 @@ export function TransactionForm({
   onSubmit,
   isSubmitting,
 }: TransactionFormProps) {
+  const [showRecurring, setShowRecurring] = useState(false)
+  const { canAccess } = useSubscription()
+
+  // Проверяем доступ к регулярным платежам (Premium/Pro функция)
+  const canUseRecurring = canAccess('premium')
+
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -73,13 +90,15 @@ export function TransactionForm({
             0,
           ),
       categoryId: transaction?.categoryId || 0,
+      createRecurring: false,
+      frequency: 'monthly',
+      endDate: undefined,
     },
   })
 
   useEffect(() => {
     if (transaction) {
       const date = new Date(transaction.date)
-      // Корректируем дату для правильного отображения
       const correctedDate = new Date(
         date.getFullYear(),
         date.getMonth(),
@@ -94,12 +113,14 @@ export function TransactionForm({
         description: transaction.description,
         date: correctedDate,
         categoryId: transaction.categoryId,
+        createRecurring: false,
+        frequency: 'monthly',
+        endDate: undefined,
       })
     }
   }, [transaction, form])
 
   const handleSubmit = (values: z.infer<typeof schema>) => {
-    // Установка времени на 12:00 для предотвращения проблем с часовыми поясами
     const selectedDate = values.date
     const correctedDate = new Date(
       selectedDate.getFullYear(),
@@ -110,13 +131,30 @@ export function TransactionForm({
       0,
     )
 
-    onSubmit({
+    const data: TransactionFormData = {
       amount: values.amount,
       description: values.description || '',
       date: correctedDate.toISOString(),
       categoryId: values.categoryId,
-    })
+    }
+
+    if (values.createRecurring && values.frequency) {
+      data.createRecurring = true
+      data.frequency = values.frequency as RecurringFrequency
+      if (values.endDate) {
+        data.endDate = values.endDate.toISOString()
+      }
+    }
+
+    onSubmit(data)
   }
+
+  const frequencyOptions = [
+    { value: 'daily', label: 'Ежедневно' },
+    { value: 'weekly', label: 'Еженедельно' },
+    { value: 'monthly', label: 'Ежемесячно' },
+    { value: 'yearly', label: 'Ежегодно' },
+  ]
 
   return (
     <Form {...form}>
@@ -238,6 +276,127 @@ export function TransactionForm({
             </FormItem>
           )}
         />
+
+        {!transaction && canUseRecurring && (
+          <div className='space-y-4 rounded-lg border p-4'>
+            <FormField
+              control={form.control}
+              name='createRecurring'
+              render={({ field }) => (
+                <FormItem className='flex flex-row items-start space-y-0 space-x-3'>
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={checked => {
+                        field.onChange(checked)
+                        setShowRecurring(!!checked)
+                      }}
+                    />
+                  </FormControl>
+                  <div className='space-y-1 leading-none'>
+                    <FormLabel className='flex items-center gap-2'>
+                      <Repeat className='h-4 w-4' />
+                      Сделать регулярным платежом
+                    </FormLabel>
+                    <FormDescription>
+                      Автоматически создавать эту транзакцию через определенные
+                      интервалы
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {showRecurring && (
+              <>
+                <FormField
+                  control={form.control}
+                  name='frequency'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Частота повторения</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Выберите частоту' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {frequencyOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name='endDate'
+                  render={({ field }) => (
+                    <FormItem className='flex flex-col'>
+                      <FormLabel>Дата окончания (необязательно)</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant='outline'
+                              className={cn(
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground',
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, 'dd.MM.yyyy')
+                              ) : (
+                                <span>Бессрочно</span>
+                              )}
+                              <CalendarIcon className='ml-auto h-4 w-4 opacity-50' />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className='w-auto p-0' align='start'>
+                          <Calendar
+                            mode='single'
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={date => date < new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormDescription>
+                        Если не указано, регулярный платеж будет действовать
+                        бессрочно
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+          </div>
+        )}
+
+        {!transaction && !canUseRecurring && (
+          <Alert>
+            <Repeat className='h-4 w-4' />
+            <AlertDescription>
+              Регулярные платежи доступны в планах Premium и Pro.
+              <br />
+              Обновите подписку для автоматического создания повторяющихся
+              транзакций.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Button type='submit' disabled={isSubmitting} className='w-full'>
           {isSubmitting ? 'Обработка...' : transaction ? 'Обновить' : 'Создать'}
